@@ -8,21 +8,11 @@ Azul Villanueva
 
 Franco Mastelli
 
-### Clase 1: 21-08
+### Clase 1: 13-08
 
 Presentación / Encuesta inicio de curso
 
-Fundamentos de programación en R: entorno, objectos, estructuras de datos, loops, control flow y funciones
-
-- [Introducción al entorno R](clase 1/Clase 1 - Introduccion a R.nb.html)
-- [Loops, condicionales y funciones](clase 1/Clase 1 - Loops, condicionales y funciones.nb.html)
-- [Ejercicios](clase 1/Clase 1 - Ejercicios -Consignas .nb.html)
-- [Resueltos](clase 1/Resueltos/Clase 1 - Ejercicios -Resueltos.R)
-
-#### Datasets para ejercicios
-- [Dataset EPH](Fuentes/usu_individual_T120.txt) 
-
-### Clase 2
+### Clase 2: 20-08
 
 Introducción al paquete Tidyverse: trabajo con datasets (`dplyr` y `tidyr`), fechas (`lubridate`), strings (`stringr`) y gráficos (`ggplot2`)
 
@@ -43,7 +33,7 @@ Introducción al paquete Tidyverse: trabajo con datasets (`dplyr` y `tidyr`), fe
 - [Distintos tipos de Join](clase 2/Clase 2. Distintos tipos de Join (OPCIONAL).nb.html)
 
 
-### Clase 3
+### Clase 3: 27-08
 
 Estimación y test de correlación entre 2 variables. Matrices de correlación: librerías `corrr` y `GGally` 
 
@@ -58,7 +48,7 @@ Análisis exploratorios, limpieza de datos, análisis de outliers e interpretaci
 
 - [Dataset Encuesta Sueldos IT](Fuentes/regresion_simple/encuesta_sueldos_sysarmy_2s2020.csv)
 
-### Clase 4
+### Clase 4: 03-09
 
 Inferencia sobre los parámetros, test de significatividad global y R-cuadrado
 
@@ -69,7 +59,7 @@ Introducción a programación funcional con Tidyverse `PURRR`
 - [Tidyverse:PURRR](clase 4/PURRR.nb.html)
 
 
-### Clase 5
+### Clase 5: 10-09
 
 Diagnóstico de modelo lineal simple
 
@@ -83,7 +73,7 @@ Un ejemplo de Shiny App sobre Overfitting (basado en https://github.com/apapiu/S
 
 - [Shiny App](clase 5/shiny/overfitting/app.R)
 
-### Clase 6
+### Clase 6: 17-09
 
 Interpretación de coeficientes en Regresión Lineal Múltiple, inclusión de variables categóricas y test de significatividad individual
 
@@ -94,7 +84,7 @@ Interpretación de coeficientes en Regresión Lineal Múltiple, inclusión de va
 - [Dataset Properati](Fuentes/ar_properties.csv)
 - [Preprocesamiento Dataset Properati](clase 6/Preprocesamiento Dataset Properati.nb.html)
 
-### Clase 7
+### Clase 7: 24-09
 
 Evaluación y diagnóstico del modelo. Explicación vs predicción.
 
@@ -104,17 +94,17 @@ Evaluación y diagnóstico del modelo. Explicación vs predicción.
 
 - [Datos Properati Preprocesados](clase 6/properati_preprocesado.csv)
 
-### Clase 8
+### Clase 8: 01-10
 
 Extensiones del Modelo de Regresión Lineal Múltiple. 
 
 - [Extensiones Modelo Lineal Múltiple](clase 8/Clase 8 - Molelo log(price).nb.html)
 
-### Clase 9
+### Clase 9: 15-10
 
 Regresión Bayesiana 
 
-### Clase 10
+### Clase 10: 22-10
 
 Regresión Logística: modelo de clasificación. Interpretación de coeficientes, métricas y gráficos de evaluación del modelo y evaluación de performance. 
 
@@ -122,7 +112,7 @@ Problema del desbalanceo de clases: comportamiento del modelo, estrategia de ove
 
 - [Regresion Logistica](clase 9/logit.nb.html)
 
-### Clase 11
+### Clase 11: 29-10
 
 Regularización: modelos Ridge, Lasso y Elastic Net y trade off sesgo-varianza
 
@@ -133,14 +123,14 @@ Regularización: modelos Ridge, Lasso y Elastic Net y trade off sesgo-varianza
 - [Diccionario de términos NBA](clase 10/diccionario_terminos.csv)
 - [Datos de estádisticas de juego de la NBA](clase 10/ nba_player_stats_salary_2019_2020.csv)
 
-### Clase 12
+### Clase 12: 05-11
 
 Smoothing, GAM y Prophet. 
 
 - [Prophet: implementacion de GAM para series de tiempo](clase 11/prophet_shopping.nb.html)
 
 
-### Clase 14
+### Clase 14: 19-11
 
 Redes Neuronales. 
 
