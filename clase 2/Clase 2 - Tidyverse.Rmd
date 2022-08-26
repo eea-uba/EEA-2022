@@ -487,21 +487,21 @@ La función base `gsub()` nos permite reemplazar parte del string por otra cosa.
 
 
 ```{r}
-string6 <- "todos los caballos blancos"
+string6 <- "todos los manzanos blancos"
 string6
 #le sacamos los espacios
 gsub(pattern = " ", replacement = "", x = string6)
-#lo llevamos a lenguaje inclusivo
-gsub(pattern = "os", replacement = "xs", x = string6)
+#lo llevamos a genero femenino
+gsub(pattern = "os", replacement = "as", x = string6)
 ```
 
 Con stringr
 
 ```{r}
 # Reemplazamos la primera ocurrencia
-str_replace(string = string6, pattern = "os", replacement = "xs")
+str_replace(string = string6, pattern = "os", replacement = "as")
 # Reemplazamos todas las ocurrencias
-str_replace_all(string = string6, pattern = "os", replacement = "xs")
+str_replace_all(string = string6, pattern = "os", replacement = "as")
 ```
 
 ### Detectar patrones en strings
