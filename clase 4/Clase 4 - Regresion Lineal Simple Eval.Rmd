@@ -321,4 +321,8 @@ ggplot(encuesta_aumentada, aes(.hat, .std.resid)) +
   theme_bw() +
   labs(title = "Residual vs leverage")
 ```
+Versiones anteriores de la notebook se pueden encontrar en:
 
+[EEA-2021](https://eea-uba.github.io/EEA-2021/clase%204/Clase-4---Regresion-Lineal-Simple-Eval.html): Elaborada por Juan Manuel Barriola y Sofía Perini
+
+[EEA-2020](https://eea-uba.github.io/EEA-2020/clase%204/Clase-4---Regresion-Lineal-Simple-Eval.html): Elaborada por Juan Manuel Barriola y Sofía Perini 
