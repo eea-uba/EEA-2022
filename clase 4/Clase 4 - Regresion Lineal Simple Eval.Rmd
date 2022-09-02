@@ -164,7 +164,7 @@ Al igual que en el modelo anterior el p-valor es muy pequeño y el intervalo no 
 tidy(modelo_empresa, conf.int = TRUE)
 ```
 
-En este modelo, el p-valor asociado al test sobre $\beta_1$ es igual el mayor que hemos obtenido pero sigue siendo posible rechazar la hipótesis nula.
+En este modelo, el p-valor asociado al test de significatividad individual de $\beta_1$ es el mayor que hemos obtenido pero sigue siendo posible rechazar la hipótesis nula.
 
 ### Test F (test de significatividad global)
 
@@ -245,13 +245,14 @@ plot(modelo_edad)
 
 2) **Normal QQ plot**: los extremos no se ajustan a la distribución teórica
 
-4) **Residual** vs **leverage**: Existen tres puntos con un leverage bastante alto, el gráfico destaca las observaciones 52, 73 y 90.
+4) **Residual** vs **leverage**: Considerando el criterio que una observación es potencialmente influyente cuando $h_{ii}>0.5$ concluimos que que existen tres puntos con un leverage bastante alto. De ellas, el gráfico destaca la observación 97
 
 ```{r}
-encuesta_sueldos[52,]
+#Miremos la observacion 97 en detalle
+encuesta_sueldos[97,]
 ```
 
-**Diagnóstico**: el modelo no cumple con los supuestos del modelo lineal. Parecen existir dos problemas: falta de normalidad y la presencia de observaciones de alto leverage
+**Diagnóstico**: el modelo no cumple con los supuestos del modelo lineal. Parecen existir tres problemas situaciones: violación del supuesto de linealidad de la esperanza condicional, falta de normalidad y presencia de observaciones de alto leverage
 
 **Modelo de experiencia**
 
