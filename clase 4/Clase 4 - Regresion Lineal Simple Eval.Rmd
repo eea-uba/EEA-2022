@@ -1,7 +1,7 @@
 ---
 title: "Regresión Lineal Simple: Evaluación y Diagnóstico"
-author: "Juan Barriola y Sofía Perini"
-date: "18 de Septiembre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "03 de Septiembre de 2022"
 output:
   html_document:
     df_print: paged
@@ -22,13 +22,13 @@ div.main-container {
 
 ## Planteo del problema
 
-Vamos a trabajar con un dataset de la encuesta de sueldos en el sector de tecnología en Argentina realizada por SysArmy para el segundo semestre de 2020. El informe, realizado por OpenQube lo pueden ver [acá](https://sueldos.openqube.io/encuesta-sueldos-2020.02/).
+Vamos a trabajar con un dataset de la encuesta de sueldos en el sector de tecnología en Argentina realizada por SysArmy para el segundo semestre de 2022. 
 
 El objetivo es crear un modelo lineal simple para explicar el sueldo bruto de los Data Analysts, Data Scientists y Data Engineers en Argentina.
 
-La idea subyacente de cómo se puede explicar el salario neto es:
+La idea subyacente de cómo se puede explicar el salario bruto es:
 
-$salarioNeto = \beta_0 +\beta_1X+\epsilon$
+$salarioBruto = \beta_0 +\beta_1X+\epsilon$
 
 ## Dataset y Modelos
 
@@ -164,7 +164,7 @@ Al igual que en el modelo anterior el p-valor es muy pequeño y el intervalo no 
 tidy(modelo_empresa, conf.int = TRUE)
 ```
 
-En este modelo, el p-valor asociado al test sobre $\beta_1$ es igual el mayor que hemos obtenido pero sigue siendo posible rechazar la hipótesis nula.
+En este modelo, el p-valor asociado al test de significatividad individual de $\beta_1$ es el mayor que hemos obtenido pero sigue siendo posible rechazar la hipótesis nula.
 
 ### Test F (test de significatividad global)
 
@@ -213,7 +213,7 @@ glance(modelo_experiencia)
 glance(modelo_empresa)
 ```
 
-Observamos que el modelo que utiliza los años de experiencia como variable explicativa tiene el mayor R-cuadrado: $R^2=0.2098$ y por lo tanto es el mejor modelo entre los que probamos para **explicar** el salario neto del grupo de personas que estamos analizando.
+Observamos que el modelo que utiliza los años de experiencia como variable explicativa tiene el mayor R-cuadrado: $R^2=0.1373$ y por lo tanto es el mejor modelo entre los que probamos para **explicar** el salario bruto del grupo de personas que estamos analizando.
 
 ## Diagnóstico del modelo
 
@@ -241,17 +241,18 @@ Observemos estos gráficos para el modelo de edad
 plot(modelo_edad)
 ```
 
-1) **Residuos** vs **valores predichos**:  Parece existir cierta estructura en los datos: hay una leve curvatura 
+1) **Residuos** vs **valores predichos**:  Parece existir cierta estructura en los datos dado que hay una curvatura  
 
 2) **Normal QQ plot**: los extremos no se ajustan a la distribución teórica
 
-4) **Residual** vs **leverage**: Existen tres puntos con un leverage bastante alto, el gráfico destaca las observaciones 52, 73 y 90.
+4) **Residual** vs **leverage**: Considerando el criterio que una observación es potencialmente influyente cuando $h_{ii}>0.5$ concluimos que que existen tres puntos con un leverage bastante alto. De ellas, el gráfico destaca la observación 97
 
 ```{r}
-encuesta_sueldos[52,]
+#Miremos la observacion 97 en detalle
+encuesta_sueldos[97,]
 ```
 
-**Diagnóstico**: el modelo no cumple con los supuestos del modelo lineal. Parecen existir dos problemas: falta de normalidad y la presencia de observaciones de alto leverage
+**Diagnóstico**: el modelo no cumple con los supuestos del modelo lineal. Parecen existir tres problemas situaciones: violación del supuesto de linealidad de la esperanza condicional, falta de normalidad y presencia de observaciones de alto leverage
 
 **Modelo de experiencia**
 
@@ -305,9 +306,9 @@ ggplot(encuesta_aumentada, aes(sample= .std.resid))+
 
 El histograma de residuos estandarizados muestra que los mismos presentan una distribución sesgada a derecha. Lo que también se aprecia en el QQ plot, al alejarse en los extremos de los valores teóricos se observa que en valores bajos de residuos, los residuos observados presentan valores mayores a los teóricos, mientras que los valores teóricos estarían por encima de los observados en valores altos de residuos. 
 
-Para mayor detalle de cómo sería la distribución de los residuos según el tipo de QQ-plot, sugerimos ver los ejemplos que muestra el Dr Jon Yearsley en [Quantile-Quantile Plots](https://www.ucd.ie/ecomodel/Resources/QQplots_WebVersion.html#right-skewed-data).
+Para mayor detalle de cómo sería la distribución de los residuos según el tipo de QQ-plot, sugerimos ver los ejemplos en [Quantile-Quantile Plots](https://www.ucd.ie/ecomodel/Resources/QQplots_WebVersion.html#right-skewed-data).
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 ggplot(encuesta_aumentada, aes(.fitted, sqrt(abs(.std.resid))))+
   geom_point()+
   geom_smooth(se = FALSE) +
@@ -320,4 +321,8 @@ ggplot(encuesta_aumentada, aes(.hat, .std.resid)) +
   theme_bw() +
   labs(title = "Residual vs leverage")
 ```
+Versiones anteriores de la notebook se pueden encontrar en:
 
+[EEA-2021](https://eea-uba.github.io/EEA-2021/clase%204/Clase-4---Regresion-Lineal-Simple-Eval.html): Elaborada por Juan Manuel Barriola y Sofía Perini
+
+[EEA-2020](https://eea-uba.github.io/EEA-2020/clase%204/Clase-4---Regresion-Lineal-Simple-Eval.html): Elaborada por Juan Manuel Barriola y Sofía Perini 

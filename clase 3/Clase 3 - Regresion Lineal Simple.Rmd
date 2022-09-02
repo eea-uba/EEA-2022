@@ -355,6 +355,13 @@ encuesta_ds_final = encuesta_ds_sin_outliers %>%
   filter(salario_bruto >= limite_inferior_percentil)
 ```
 
+Escribimos el archivo para el uso en siguientes notebooks
+
+```{r}
+encuesta_ds_final %>% write_csv("../Fuentes/regresion_simple/encuesta_ds_limpia.csv")
+```
+
+
 ### GGPairs III
 
 Habiendo eliminado los outliers univariados de la variable respuesta realizamos un último análisis exploratorio con ggpairs.

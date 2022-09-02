@@ -1,214 +1,223 @@
 edad,anos_de_experiencia,anos_en_la_empresa_actual,anos_en_el_puesto_actual,perfil,salario_bruto,salario_neto
-26,3,1,1,Data Scientist / Data Engineer,75000,68000
-32,11,1,1,BI Analyst / Data Analyst,90000,75000
-40,4,0,0,BI Analyst / Data Analyst,40000,34500
-30,4,1,4,BI Analyst / Data Analyst,84000,68000
-30,6,2,2,BI Analyst / Data Analyst,125000,93500
-25,1,1,1,BI Analyst / Data Analyst,40000,34500
-35,10,1,5,BI Analyst / Data Analyst,120000,89000
-31,3,0,2,Data Scientist / Data Engineer,141882,103330
-27,2,0,2,BI Analyst / Data Analyst,82000,68000
-38,5,0,0,Data Scientist / Data Engineer,130000,105000
-24,3,3,3,Data Scientist / Data Engineer,134333,99000
-30,6,6,2,Data Scientist / Data Engineer,158000,104000
-29,1,0,0,Data Scientist / Data Engineer,65000,54000
-25,3,2,1,Data Scientist / Data Engineer,161000,112000
-29,4,2,2,BI Analyst / Data Analyst,66000,55000
-25,2,0,0,Data Scientist / Data Engineer,80000,65000
-31,0,0,0,Data Scientist / Data Engineer,60000,50000
-27,8,1,1,BI Analyst / Data Analyst,115000,90000
-28,3,0,0,BI Analyst / Data Analyst,79800,71200
-40,11,2,2,BI Analyst / Data Analyst,57000,47000
-28,5,0,0,BI Analyst / Data Analyst,143000,115000
-28,3,1,1,Data Scientist / Data Engineer,138000,99000
-28,1,1,1,BI Analyst / Data Analyst,67000,56000
-32,9,25,25,Data Scientist / Data Engineer,235000,150000
-31,13,10,4,BI Analyst / Data Analyst,143000,110000
-38,10,1,1,Data Scientist / Data Engineer,129000,102000
-32,8,0,1,BI Analyst / Data Analyst,72000,61500
-26,1,1,0,Data Scientist / Data Engineer,85000,64
-33,3,0,0,Data Scientist / Data Engineer,140000,124000
-31,0,0,0,Data Scientist / Data Engineer,52800,43800
-36,2,1,1,Data Scientist / Data Engineer,85000,79000
-28,2,0,1,Data Scientist / Data Engineer,112000,97000
-28,3,5,5,Data Scientist / Data Engineer,130000,80000
-42,24,0,13,BI Analyst / Data Analyst,130000,100000
-22,1,1,1,Data Scientist / Data Engineer,51000,42000
-26,1,1,0,Data Scientist / Data Engineer,82000,68000
-27,9,2,2,Data Scientist / Data Engineer,130000,100000
-26,4,0,4,BI Analyst / Data Analyst,78000,63000
-36,10,6,6,BI Analyst / Data Analyst,115000,87
-29,3,0,0,Data Scientist / Data Engineer,120000,89000
-38,15,15,5,BI Analyst / Data Analyst,230000,170000
-24,1,0,0,Data Scientist / Data Engineer,54000,44500
-29,4,4,2,Data Scientist / Data Engineer,100000,80000
-29,2,1,0,Data Scientist / Data Engineer,130000,107000
-32,3,3,3,Data Scientist / Data Engineer,108000,85000
-34,12,0,0,Data Scientist / Data Engineer,85000,71000
-29,3,1,1,BI Analyst / Data Analyst,92000,71000
-27,0,0,0,Data Scientist / Data Engineer,55000,46000
-37,17,1,1,BI Analyst / Data Analyst,85000,72000
-34,12,2,2,Data Scientist / Data Engineer,190000,125000
-28,7,0,15,Data Scientist / Data Engineer,140000,110000
-46,25,8,8,BI Analyst / Data Analyst,220000,150000
-26,5,2,0,Data Scientist / Data Engineer,136000,92600
-23,3,2,0,Data Scientist / Data Engineer,163000,106000
-23,1,0,0,Data Scientist / Data Engineer,54000,44820
-45,23,4,4,BI Analyst / Data Analyst,139216,98000
-27,8,0,5,BI Analyst / Data Analyst,115000,98000
-26,3,3,2,Data Scientist / Data Engineer,129000,96000
-27,9,7,7,BI Analyst / Data Analyst,41000,32000
-34,13,0,10,BI Analyst / Data Analyst,120000,90000
-46,12,0,0,Data Scientist / Data Engineer,120000,85000
-26,2,2,2,Data Scientist / Data Engineer,56000,46000
-31,0,0,0,BI Analyst / Data Analyst,65000,51000
-28,2,1,1,Data Scientist / Data Engineer,102000,83917
-24,1,0,0,BI Analyst / Data Analyst,39870,32000
-32,7,7,7,BI Analyst / Data Analyst,67000,58000
-28,2,2,1,Data Scientist / Data Engineer,90000,68000
-32,11,1,4,BI Analyst / Data Analyst,127000,95000
-41,18,3,1,Data Scientist / Data Engineer,150000,100000
-20,1,8,1,BI Analyst / Data Analyst,70000,55000
-32,2,0,0,Data Scientist / Data Engineer,105000,80000
-35,2,0,0,BI Analyst / Data Analyst,167000,115000
-47,18,6,6,BI Analyst / Data Analyst,76072,45710
-43,2,2,2,Data Scientist / Data Engineer,76000,63080
-33,12,0,1,Data Scientist / Data Engineer,133000,105000
-29,7,2,2,BI Analyst / Data Analyst,103488,82899
-31,8,1,1,BI Analyst / Data Analyst,55000,44000
-28,2,2,2,Data Scientist / Data Engineer,100000,75000
-26,2,2,2,BI Analyst / Data Analyst,43000,36900
-40,14,4,2,BI Analyst / Data Analyst,135000,105000
-25,5,1,1,BI Analyst / Data Analyst,68600,56900
-32,5,2,2,BI Analyst / Data Analyst,184000,103000
-43,22,1,1,BI Analyst / Data Analyst,107000,88000
-32,6,3,0,Data Scientist / Data Engineer,130000,89000
-24,0,0,0,BI Analyst / Data Analyst,50000,42000
-28,5,0,0,BI Analyst / Data Analyst,90000,75000
-30,7,1,1,BI Analyst / Data Analyst,90000,75000
-23,3,1,1,Data Scientist / Data Engineer,50000,46000
-39,16,10,10,BI Analyst / Data Analyst,89920,85000
-48,15,10,9,BI Analyst / Data Analyst,76000,64000
-23,1,1,1,Data Scientist / Data Engineer,57525,47700
-29,2,1,1,BI Analyst / Data Analyst,43000,38700
-26,2,2,2,Data Scientist / Data Engineer,70000,58000
-28,4,2,1,Data Scientist / Data Engineer,69000,56000
-28,5,5,3,Data Scientist / Data Engineer,120000,85000
-32,0,0,0,Data Scientist / Data Engineer,99143,87000
-43,25,1,10,BI Analyst / Data Analyst,98000,78000
-28,3,1,1,Data Scientist / Data Engineer,140000,100000
-27,5,5,1,BI Analyst / Data Analyst,77000,64000
-28,1,1,1,BI Analyst / Data Analyst,37000,32000
-25,1,1,1,Data Scientist / Data Engineer,48000,46000
-23,2,2,2,BI Analyst / Data Analyst,56000,45000
-26,1,1,1,Data Scientist / Data Engineer,68500,57000
-35,10,2,1,Data Scientist / Data Engineer,160000,105000
-43,16,8,3,BI Analyst / Data Analyst,143000,106000
-32,6,0,0,BI Analyst / Data Analyst,144000,110000
-43,12,1,1,BI Analyst / Data Analyst,187980,123160
-22,0,0,0,Data Scientist / Data Engineer,51000,48000
-29,0,5,1,Data Scientist / Data Engineer,46000,39000
-33,0,0,0,BI Analyst / Data Analyst,44000,40000
-26,2,2,2,Data Scientist / Data Engineer,110000,80000
-32,0,0,0,Data Scientist / Data Engineer,56250,46700
-33,8,2,2,BI Analyst / Data Analyst,90000,70000
-30,4,4,3,BI Analyst / Data Analyst,96000,79700
-30,3,2,2,BI Analyst / Data Analyst,85000,70000
-42,18,4,2,BI Analyst / Data Analyst,200000,155000
-30,3,3,3,BI Analyst / Data Analyst,56000,52500
-30,4,1,1,Data Scientist / Data Engineer,216220,130000
-30,11,2,8,Data Scientist / Data Engineer,101000,80000
-23,0,0,0,BI Analyst / Data Analyst,40000,33000
-23,0,0,0,BI Analyst / Data Analyst,40000,33000
-25,2,0,2,Data Scientist / Data Engineer,125000,92000
-39,13,10,3,Data Scientist / Data Engineer,192000,132000
-27,3,2,2,BI Analyst / Data Analyst,68000,56000
-28,5,1,1,Data Scientist / Data Engineer,128000,95000
-30,12,5,2,Data Scientist / Data Engineer,166000,113000
-37,14,1,1,BI Analyst / Data Analyst,120000,91000
-34,7,1,1,BI Analyst / Data Analyst,94000,73000
-36,2,2,2,BI Analyst / Data Analyst,120000,95000
-37,10,10,3,Data Scientist / Data Engineer,105000,75000
-39,13,0,0,Data Scientist / Data Engineer,230000,160000
-25,4,1,1,Data Scientist / Data Engineer,80000,65000
-45,23,23,23,BI Analyst / Data Analyst,125000,95000
-37,17,17,5,BI Analyst / Data Analyst,85000,70000
-35,10,2,4,Data Scientist / Data Engineer,163000,115000
-29,4,2,2,BI Analyst / Data Analyst,52183,43300
-26,0,0,0,BI Analyst / Data Analyst,42000,39063
-36,10,1,1,BI Analyst / Data Analyst,100000,72000
-34,10,1,4,Data Scientist / Data Engineer,140000,110000
-24,1,1,1,Data Scientist / Data Engineer,81500,71000
-22,2,0,0,BI Analyst / Data Analyst,78000,65000
-33,10,1,1,Data Scientist / Data Engineer,220000,140000
-33,10,5,3,Data Scientist / Data Engineer,150000,108000
-23,0,0,0,BI Analyst / Data Analyst,46000,38000
-28,7,4,4,Data Scientist / Data Engineer,180000,120000
-25,3,2,2,BI Analyst / Data Analyst,61000,49971
-27,1,1,1,Data Scientist / Data Engineer,54216,45000
-25,3,2,2,BI Analyst / Data Analyst,60000,56000
-25,2,2,2,BI Analyst / Data Analyst,53143,44109
-38,15,5,5,BI Analyst / Data Analyst,230000,155000
-36,10,1,6,BI Analyst / Data Analyst,123000,87000
-23,0,0,0,Data Scientist / Data Engineer,99000,80000
-28,10,2,1,Data Scientist / Data Engineer,113000,88700
-33,10,4,3,Data Scientist / Data Engineer,103000,88000
-43,15,5,10,Data Scientist / Data Engineer,75000,67500
-43,20,5,1,Data Scientist / Data Engineer,190000,155800
-37,16,3,2,Data Scientist / Data Engineer,120000,98000
-41,21,21,10,BI Analyst / Data Analyst,85000,73000
-30,1,0,0,Data Scientist / Data Engineer,50600,42000
-38,12,2,2,BI Analyst / Data Analyst,65000,58000
-26,3,1,2,Data Scientist / Data Engineer,105000,85000
-42,14,17,2,BI Analyst / Data Analyst,67000,56000
-41,15,43,3,Data Scientist / Data Engineer,135000,105000
-35,15,1,1,Data Scientist / Data Engineer,180000,120000
-25,0,0,0,Data Scientist / Data Engineer,100000,90000
-26,3,2,2,BI Analyst / Data Analyst,91000,73000
-36,15,5,0,BI Analyst / Data Analyst,165000,115000
-34,18,9,9,BI Analyst / Data Analyst,75000,62000
-32,8,1,1,BI Analyst / Data Analyst,216000,150000
-24,1,1,1,BI Analyst / Data Analyst,73000,60000
-35,1,1,1,BI Analyst / Data Analyst,85000,70000
-37,6,0,0,Data Scientist / Data Engineer,170000,128000
-25,3,0,0,BI Analyst / Data Analyst,80000,66000
-29,8,0,8,BI Analyst / Data Analyst,102000,85000
-40,15,3,1,Data Scientist / Data Engineer,125000,100000
-29,5,0,0,Data Scientist / Data Engineer,100000,82000
-31,12,2,2,BI Analyst / Data Analyst,165000,125000
-27,3,5,3,BI Analyst / Data Analyst,62000,51500
-24,0,1,0,Data Scientist / Data Engineer,61000,51000
-28,7,1,4,BI Analyst / Data Analyst,52279,43392
-35,5,3,3,Data Scientist / Data Engineer,160000,100000
-29,0,6,1,Data Scientist / Data Engineer,48000,40000
-31,1,0,0,BI Analyst / Data Analyst,70000,65000
-28,3,3,1,Data Scientist / Data Engineer,100000,80000
-38,15,13,2,BI Analyst / Data Analyst,100000,75000
-29,1,0,1,BI Analyst / Data Analyst,94000,71000
-35,13,7,2,BI Analyst / Data Analyst,112000,98000
-33,6,3,1,BI Analyst / Data Analyst,101000,80000
-27,2,0,0,Data Scientist / Data Engineer,90825,73035
-37,4,0,0,Data Scientist / Data Engineer,109000,10700
-28,4,2,1,BI Analyst / Data Analyst,47000,39000
-26,3,2,0,Data Scientist / Data Engineer,46000,39000
-30,4,3,3,BI Analyst / Data Analyst,130000,116000
-30,5,2,2,BI Analyst / Data Analyst,118000,97000
-34,12,12,4,BI Analyst / Data Analyst,64433,54588
-32,2,1,2,Data Scientist / Data Engineer,70361,58230
-30,5,2,1,Data Scientist / Data Engineer,54000,40000
-55,25,5,10,Data Scientist / Data Engineer,140000,100000
-32,10,2,2,BI Analyst / Data Analyst,60000,53000
-26,3,0,0,BI Analyst / Data Analyst,110000,85000
-33,12,12,3,BI Analyst / Data Analyst,105000,70000
-25,3,0,0,Data Scientist / Data Engineer,104000,81000
-30,3,1,1,Data Scientist / Data Engineer,80000,66300
-27,4,2,2,BI Analyst / Data Analyst,61000,50630
-43,20,1,1,BI Analyst / Data Analyst,105000,85000
-31,8,3,1,BI Analyst / Data Analyst,161000,115000
-43,20,5,5,BI Analyst / Data Analyst,160000,120000
-31,5,1,4,BI Analyst / Data Analyst,63000,52290
-39,14,8,5,BI Analyst / Data Analyst,113000,89000
-30,5,2,2,BI Analyst / Data Analyst,82000,68900
-37,0,0,0,Data Scientist / Data Engineer,40000,38000
-36,13,1,0,BI Analyst / Data Analyst,72000,57000
-36,13,1,0,BI Analyst / Data Analyst,72000,57000
+27,0,0,0,Data Engineer,95000,79000
+43,0,0,0,BI Analyst / Data Analyst,220000,183000
+25,2,1,1,BI Analyst / Data Analyst,160000,125000
+34,3,1,1,Data Scientist,324415,207575
+23,0,0,0,Data Engineer,100000,90000
+22,0,0,0,Data Scientist,160000,134000
+59,24,24,14,BI Analyst / Data Analyst,216453,172329
+35,7,0,0,BI Analyst / Data Analyst,350000,290500
+53,4,2,2,Data Scientist,490000,420000
+36,12,15,3,BI Analyst / Data Analyst,300000,210000
+25,0,0,0,BI Analyst / Data Analyst,110000,92000
+27,2,1,0,Data Scientist,210000,154000
+25,3,0,0,BI Analyst / Data Analyst,150000,125000
+28,1,1,1,Data Scientist,260000,223000
+25,0,0,0,BI Analyst / Data Analyst,152000,129000
+33,10,1,1,BI Analyst / Data Analyst,289000,240000
+29,5,3,0,Data Scientist,369000,255000
+31,4,0,0,BI Analyst / Data Analyst,285000,236000
+32,2,0,1,Data Engineer,480000,320000
+29,2,2,1,Data Scientist,350000,240000
+35,10,1,1,Data Engineer,400000,268000
+27,3,1,1,Data Scientist,320000,245000
+29,5,4,4,Data Engineer,380000,250000
+30,5,0,0,BI Analyst / Data Analyst,225000,195000
+20,0,0,0,Data Engineer,114400,95700
+25,3,2,2,Data Scientist,220000,185000
+27,0,0,0,BI Analyst / Data Analyst,140000,120000
+42,2,0,2,Data Engineer,300000,220000
+39,7,19,7,BI Analyst / Data Analyst,177000,142000
+39,20,0,0,BI Analyst / Data Analyst,400000,310000
+30,1,1,1,BI Analyst / Data Analyst,95000,91000
+36,0,0,0,Data Scientist,193000,164000
+26,3,1,0,Data Scientist,395000,245000
+58,36,3,2,BI Analyst / Data Analyst,231000,203000
+34,4,13,0,BI Analyst / Data Analyst,194000,160700
+30,4,1,1,Data Engineer,230000,188000
+22,4,0,0,Data Engineer,190000,157000
+23,1,1,1,Data Engineer,120000,100000
+42,0,5,0,BI Analyst / Data Analyst,292377,219000
+29,4,2,2,BI Analyst / Data Analyst,195000,120000
+24,1,9,9,Data Engineer,460000,308000
+21,0,0,0,Data Scientist,100021,79956
+33,10,0,0,BI Analyst / Data Analyst,410000,270000
+26,6,1,0,BI Analyst / Data Analyst,500000,308000
+29,3,0,0,Data Engineer,330000,200000
+27,4,3,2,BI Analyst / Data Analyst,145000,117000
+32,4,1,1,BI Analyst / Data Analyst,165000,142000
+38,18,8,8,BI Analyst / Data Analyst,220000,195000
+30,2,0,0,Data Scientist,206500,173000
+39,1,1,1,BI Analyst / Data Analyst,147000,126000
+30,2,1,1,Data Scientist,495495,300336
+30,2,2,2,Data Scientist,350000,300000
+32,2,0,0,Data Scientist,305000,183000
+25,2,2,2,Data Scientist,253000,212000
+24,1,1,1,BI Analyst / Data Analyst,131500,113000
+30,3,3,3,BI Analyst / Data Analyst,253000,210000
+35,9,0,0,Data Scientist,200000,166
+30,2,2,2,Data Scientist,430000,300000
+28,1,1,1,Data Engineer,180000,152000
+46,14,7,3,BI Analyst / Data Analyst,380000,240000
+28,0,0,0,BI Analyst / Data Analyst,100000,80000
+33,5,4,2,Data Engineer,260000,215000
+23,0,0,0,Data Engineer,125000,115000
+29,6,0,0,BI Analyst / Data Analyst,350000,270000
+28,2,2,0,Data Scientist,207000,180000
+28,2,2,2,BI Analyst / Data Analyst,150000,120000
+39,5,5,2,BI Analyst / Data Analyst,190000,170000
+25,1,0,0,BI Analyst / Data Analyst,199000,160000
+32,2,4,1,Data Engineer,140000,110000
+54,0,0,0,Data Scientist,150000,124000
+45,4,4,4,Data Engineer,291005,227655
+28,0,0,0,BI Analyst / Data Analyst,100000,80000
+24,2,0,0,Data Engineer,246000,210000
+27,2,1,15,Data Scientist,330000,240000
+27,3,2,1,Data Scientist,480000,320000
+40,13,3,0,Data Engineer,256000,216000
+28,0,0,0,BI Analyst / Data Analyst,250000,207000
+34,5,2,2,Data Scientist,291000,180000
+30,3,0,3,Data Engineer,334000,277000
+22,0,0,0,Data Scientist,150000,127000
+24,4,1,1,BI Analyst / Data Analyst,456000,300000
+27,2,1,1,Data Scientist,221867,187900
+27,1,0,0,Data Engineer,170000,133000
+26,4,5,6,BI Analyst / Data Analyst,85000,60000
+26,0,0,0,BI Analyst / Data Analyst,200000,166000
+29,10,7,4,BI Analyst / Data Analyst,120000,100000
+44,10,5,1,BI Analyst / Data Analyst,190000,150000
+31,12,0,0,BI Analyst / Data Analyst,430000,230000
+29,0,0,0,BI Analyst / Data Analyst,150000,124000
+55,10,1,1,BI Analyst / Data Analyst,280000,233000
+31,0,0,0,BI Analyst / Data Analyst,100000,83000
+34,9,9,9,BI Analyst / Data Analyst,395000,230000
+27,4,4,1,BI Analyst / Data Analyst,230000,190000
+31,8,3,0,BI Analyst / Data Analyst,372918,214270
+35,2,0,0,BI Analyst / Data Analyst,300000,240000
+32,2,0,0,Data Scientist,110000,91000
+63,20,21,2,BI Analyst / Data Analyst,200000,140000
+29,2,2,2,BI Analyst / Data Analyst,154400,132000
+30,1,1,1,BI Analyst / Data Analyst,245000,213000
+30,2,1,1,Data Scientist,192000,160000
+30,0,0,0,Data Scientist,170000,160000
+27,2,0,0,BI Analyst / Data Analyst,160000,133000
+41,10,9,5,Data Scientist,300000,250000
+27,1,0,0,Data Scientist,272000,236000
+34,5,5,1,BI Analyst / Data Analyst,245000,219000
+33,2,0,0,BI Analyst / Data Analyst,185000,153500
+33,1,0,0,Data Scientist,312000,262000
+35,7,0,0,BI Analyst / Data Analyst,235000,200000
+38,13,1,1,Data Engineer,288030,203631
+31,3,1,1,Data Scientist,281407,218823
+33,0,0,0,Data Engineer,87000,72000
+25,0,0,0,Data Engineer,114400,94000
+42,15,2,2,BI Analyst / Data Analyst,370000,245000
+26,1,1,1,Data Scientist,350000,280000
+24,1,0,1,Data Engineer,185000,150000
+24,1,1,0,BI Analyst / Data Analyst,210000,180000
+43,10,0,0,BI Analyst / Data Analyst,200000,173000
+49,30,9,9,BI Analyst / Data Analyst,485327,328758
+24,0,0,0,Data Engineer,190400,158032
+29,6,0,3,Data Engineer,230000,195000
+28,3,0,0,BI Analyst / Data Analyst,240000,200000
+24,3,3,3,Data Engineer,308000,221086
+43,5,1,1,BI Analyst / Data Analyst,330000,238000
+38,0,0,0,Data Scientist,145000,120000
+26,2,1,3,Data Scientist,230000,191000
+23,1,1,1,Data Scientist,205000,170000
+35,6,4,4,BI Analyst / Data Analyst,135000,95000
+24,0,0,0,Data Engineer,213000,177000
+48,1,15,1,Data Scientist,315000,220000
+26,2,2,2,BI Analyst / Data Analyst,211991,177000
+25,2,0,0,Data Engineer,230000,190000
+35,4,1,1,BI Analyst / Data Analyst,370000,240000
+26,1,1,1,Data Engineer,170000,140000
+31,1,0,0,BI Analyst / Data Analyst,180000,150000
+26,2,1,1,Data Engineer,194400,161352
+24,1,0,0,Data Engineer,90000,74000
+26,2,0,0,Data Scientist,311000,240000
+30,4,4,1,Data Scientist,260000,231700
+28,3,0,0,BI Analyst / Data Analyst,200000,166000
+28,1,1,1,BI Analyst / Data Analyst,224000,184000
+25,1,1,1,Data Engineer,162362,136619
+27,2,0,0,BI Analyst / Data Analyst,253000,210000
+27,1,1,1,BI Analyst / Data Analyst,75000,63000
+23,2,0,0,Data Scientist,255000,211000
+24,2,0,0,Data Engineer,320000,260000
+27,1,1,1,BI Analyst / Data Analyst,150000,135000
+25,1,1,1,BI Analyst / Data Analyst,129000,104000
+25,1,1,1,BI Analyst / Data Analyst,96000,82000
+37,3,2,2,BI Analyst / Data Analyst,165000,137000
+26,1,1,1,Data Scientist,200000,186000
+36,1,0,0,Data Scientist,337500,225904
+24,1,0,0,Data Engineer,275000,250000
+27,0,0,0,BI Analyst / Data Analyst,147783,122659
+45,20,25,8,BI Analyst / Data Analyst,210000,170000
+42,6,4,4,BI Analyst / Data Analyst,145000,11000
+29,1,0,0,Data Engineer,120000,99800
+36,1,0,0,Data Scientist,120000,100000
+25,2,2,2,Data Engineer,110000,101000
+38,15,11,5,Data Engineer,260000,216000
+25,2,2,2,Data Engineer,120000,98000
+27,0,0,0,BI Analyst / Data Analyst,135000,112050
+30,0,0,0,Data Engineer,140000,116000
+33,5,5,4,BI Analyst / Data Analyst,220744,183098
+36,1,1,0,Data Engineer,246929,210647
+30,2,0,0,Data Scientist,235000,195000
+27,1,0,0,BI Analyst / Data Analyst,175000,145250
+30,2,0,0,BI Analyst / Data Analyst,180000,150000
+28,1,1,1,Data Engineer,183586,158072
+27,3,3,3,BI Analyst / Data Analyst,108700,92358
+29,6,1,1,Data Scientist,221000,185000
+54,0,0,0,Data Engineer,150000,127000
+28,2,1,1,Data Engineer,300000,249000
+34,0,0,0,Data Scientist,224000,202000
+30,0,0,0,BI Analyst / Data Analyst,170000,133600
+22,1,1,1,Data Engineer,250000,170000
+34,10,2,2,Data Scientist,210000,164000
+21,0,0,0,Data Engineer,127000,105410
+34,14,0,0,BI Analyst / Data Analyst,480000,450000
+28,3,0,14,Data Engineer,300000,230000
+39,15,0,0,Data Scientist,339000,270000
+27,1,1,1,Data Engineer,190000,157700
+29,5,1,1,Data Engineer,500000,280000
+42,20,2,2,Data Engineer,425000,300000
+53,30,22,5,Data Engineer,436401,315000
+48,20,0,0,Data Engineer,300000,270000
+30,2,0,1,Data Scientist,279122,231672
+30,0,0,0,Data Engineer,194000,161000
+33,10,2,1,BI Analyst / Data Analyst,300000,240000
+43,15,4,3,BI Analyst / Data Analyst,230000,200000
+24,0,0,0,Data Engineer,80000,66000
+38,1,1,1,BI Analyst / Data Analyst,190000,170000
+29,0,0,0,Data Engineer,89000,73000
+29,3,3,3,Data Engineer,240000,200000
+24,4,2,4,Data Engineer,280000,230619
+26,1,0,0,Data Engineer,250000,220000
+33,0,0,0,BI Analyst / Data Analyst,150000,12000
+32,1,0,0,BI Analyst / Data Analyst,135000,120000
+25,1,0,1,Data Scientist,240000,192000
+26,0,0,0,Data Scientist,120000,100000
+24,0,0,0,Data Scientist,100000,83000
+25,1,0,0,Data Scientist,119000,98770
+38,3,1,1,BI Analyst / Data Analyst,210777,174945
+47,23,0,3,BI Analyst / Data Analyst,80000,70000
+26,1,0,0,Data Engineer,120000,115000
+36,1,0,0,Data Scientist,130000,40000
+36,0,0,0,Data Scientist,130000,40000
+30,1,4,1,BI Analyst / Data Analyst,233000,187000
+40,15,9,9,BI Analyst / Data Analyst,270000,203000
+26,4,0,0,Data Scientist,223500,186000
+26,0,0,0,BI Analyst / Data Analyst,120000,100000
+26,0,0,0,Data Engineer,150000,130000
+31,1,1,1,BI Analyst / Data Analyst,105000,100000
+24,0,0,0,BI Analyst / Data Analyst,208976,173061
+26,1,1,1,BI Analyst / Data Analyst,122000,117000
+38,0,0,0,BI Analyst / Data Analyst,200000,169000
+21,1,1,1,BI Analyst / Data Analyst,74000,60000
+30,5,5,5,Data Scientist,176370.2,159036.03
+31,0,1,0,BI Analyst / Data Analyst,298000,245000
+26,4,1,1,BI Analyst / Data Analyst,223600,185500
+26,0,5,0,BI Analyst / Data Analyst,123000,100000
+32,2,5,0,Data Engineer,315000,250000
+29,3,0,0,Data Engineer,110000,91000

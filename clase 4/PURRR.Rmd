@@ -1,7 +1,7 @@
 ---
 title: "Tidyverse: PURRR"
-author: "Juan Barriola y Sofía Perini"
-date: "18 de Septiembre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "03 de Septiembre de 2022"
 output:
   html_notebook:
     theme: spacelab
@@ -167,10 +167,12 @@ De esta manera vamos a estar aplicando la función sobre todas las columnas del 
 
 ```{r}
 # cargamos el dataset
-encuesta_sueldos_limpia = read_csv("../Fuentes/regresion_simple/encuesta_ds_limpia.csv")
+encuesta_sueldos_limpia = read_csv("../Fuentes/regresion_simple/encuesta_ds_limpia.csv", show_col_types = FALSE)
 encuesta_sueldos_limpia <- encuesta_sueldos_limpia %>%
-  # creamos variable perfil BI/DA vs DS/DI
-  mutate(perfil = case_when(perfil == "BI Analyst / Data Analyst" ~ "BI/DA", TRUE ~ "DS/DE"))
+  # redefinimos las categorias de perfil de manera mas concisa
+  mutate(perfil = case_when(perfil == "BI Analyst / Data Analyst" ~ "BI/DA",
+                            perfil == "Data Engineer" ~ "DE",
+                            TRUE ~ "DS"))
 ```
 
 Comencemos analizando la cantidad de valores distintos para cada columna. Para ello usamos la función `n_distinct`.
@@ -204,13 +206,13 @@ encuesta_sueldos_limpia %>%
   map_dbl(median)
 ```
 
-Recordemos que esta función devuelve un vector numérico no una lista como en el caso anterior, por eso no usamos la función `str()` para ver el resultado en forma compacta.
+Recordemos que esta función devuelve un vector numérico, no una lista como en el caso anterior, por eso no usamos la función `str()` para ver el resultado en forma compacta.
 
 ### Modelos
 
 #### Creación de modelos
 
-Podemos usar la función map para calcular distintos modelos. Por ejemplo, calculemos un modelo distinto según el perfil (DA y DS). En este caso pasamos como función un modelo lineal simple:
+Podemos usar la función map para calcular distintos modelos. Por ejemplo, calculemos un modelo distinto según el perfil. En este caso pasamos como función un modelo lineal simple:
 
 ```{r}
 modelos_por_perfil = encuesta_sueldos_limpia %>% 
@@ -234,7 +236,6 @@ Podemos trabajar sobre esta lista de modelos de distintas maneras. Por ejemplo, 
 modelos_por_perfil %>% 
   map("coefficients")
 ```
-
 También podemos aplicar la función `summary` y acceder a la información de $R^2$ de ambos modelos para evaluar su capacidad explicativa (en este caso como son modelos simples podemos utilizar esta métrica).
 
 ```{r}
@@ -252,23 +253,27 @@ Podemos aplicar las funciones de broom para poder obtener la información de los
 Analicemos los elementos de cada uno utilizando la función `tidy()` de la librería broom. 
 ```{r}
 modelos_por_perfil %>% 
-  map(broom::tidy)
+  map(tidy)
 ```
 
 Si bien la salida es bastante útil, la información sobre cuál modelo estamos observando forma parte de la salida. Con la función `map_dfr` podemos concatenar los dataframes de salida y con el argumento **.id** crear una columna para indicar el modelo:
 
+
 ```{r}
 modelos_por_perfil %>% 
-  map_dfr(broom::tidy, .id="modelo")
+  map_dfr(tidy, .id="modelo")
 ```
 
 Realizamos lo mismo con la función `glance()`
 
 ```{r}
 modelos_por_perfil %>% 
-  map_dfr(broom::glance, .id="modelo")
+  map_dfr(glance, .id="modelo")
 ```
 
+Versiones anteriores de la notebook se pueden encontrar en:
+
+[EEA-2021](https://eea-uba.github.io/EEA-2021/clase%204/PURRR.nb.html): Elaborada por Juan Manuel Barriola y Sofía Perini
 
 
 
