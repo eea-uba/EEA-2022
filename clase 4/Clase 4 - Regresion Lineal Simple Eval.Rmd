@@ -42,7 +42,8 @@ En el notebook previo realizamos un análisis extenso de nuestro dataset, limpie
 
 ```{r}
 # Cargamos el dataset limpio
-encuesta_sueldos = read_csv("../Fuentes/regresion_simple/encuesta_ds_limpia.csv")
+encuesta_sueldos = read_csv("../Fuentes/regresion_simple/encuesta_ds_limpia.csv") %>% 
+                            mutate(id = 1:nrow(.)) # se agrega un ID
 ```
 
 Habíamos realizado tres modelos distintos para tratar de explicar el salario neto
@@ -245,7 +246,7 @@ plot(modelo_edad)
 
 2) **Normal QQ plot**: los extremos no se ajustan a la distribución teórica
 
-4) **Residual** vs **leverage**: Considerando el criterio que una observación es potencialmente influyente cuando $h_{ii}>0.5$ concluimos que que existen tres puntos con un leverage bastante alto. De ellas, el gráfico destaca la observación 97
+4) **Residual** vs **leverage**: Considerando el criterio que una observación es potencialmente influyente cuando $h_{ii}>0.5$ concluimos que no existen puntos que puedan ser consideradas influyentes. Sin embargo, observando la distribución de las observaciones se destaca la observación 97.
 
 ```{r}
 #Miremos la observacion 97 en detalle
@@ -321,6 +322,23 @@ ggplot(encuesta_aumentada, aes(.hat, .std.resid)) +
   theme_bw() +
   labs(title = "Residual vs leverage")
 ```
+
+Dado que estamos trabajando con un modelo de regresión podemos observar este punto y la recta del modelo. 
+
+```{r}
+ggplot(data=encuesta_aumentada, aes(x=anos_de_experiencia, y=salario_bruto)) +
+  # Graficamos los puntos
+  geom_point() +
+  # Graficamos el modelo
+  geom_abline(intercept = modelo_experiencia$coefficients[1], slope = modelo_experiencia$coefficients[2], color='forestgreen', size=1) +
+  # Graficamos el promedio de la variable x
+  geom_vline(xintercept = mean(encuesta_aumentada$anos_de_experiencia), color='firebrick', linetype='dashed', size=1) +
+  # Etiquetamos el punto relevante
+  geom_text(aes(label=ifelse(.hat>0.10 ,as.character(id),'')),hjust=0,vjust=1.4, size=3) +
+  theme_bw() +
+  labs(title = "Leverage: Modelo Años de Experiencia", x="Años de Experiencia", y="Salario Bruto")
+```
+
 Versiones anteriores de la notebook se pueden encontrar en:
 
 [EEA-2021](https://eea-uba.github.io/EEA-2021/clase%204/Clase-4---Regresion-Lineal-Simple-Eval.html): Elaborada por Juan Manuel Barriola y Sofía Perini

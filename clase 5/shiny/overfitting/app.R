@@ -1,7 +1,7 @@
 #######                                                #######
 ####### Basado en https://github.com/apapiu/Shiny-Apps #######
 #######                                                #######
-####### Dejamos link al material sobre cómo implementar una shiny app #########
+####### Dejamos link al material sobre c?mo implementar una shiny app #########
 #### https://shiny.rstudio.com/tutorial/ ####### 
 
 library(polynom)
@@ -15,10 +15,10 @@ ui <- fluidPage(theme = shinytheme("paper"),
                 titlePanel("Overfitting"),
                 
                 sidebarLayout(
-                  sidebarPanel("Seleccionar parámetros deseados",
+                  sidebarPanel("Seleccionar parametros deseados",
                                "",
                                "",
-                               # checkboxInput(inputId = "seed", label = "Mantener datos",value = TRUE),
+                               checkboxInput(inputId = "seed", label = "Mantener datos",value = TRUE),
                                sliderInput(inputId = "deg1", label = "Grado del modelo", value = 2,
                                            min = 1, max = 20,step = 1),
                                "Datos",
