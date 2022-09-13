@@ -1,7 +1,7 @@
 ---
 title: "Preprocesamiento Dataset Properati"
-author: "Juan Barriola y Sofía Perini"
-date: "2 de Octubre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "17 de septiembre de 2022"
 output:
   html_notebook:
     toc: yes
@@ -27,27 +27,32 @@ library(tidyverse)
 library(corrr)
 library(knitr)
 library(kableExtra)
+library(lubridate)
 ```
 
 ## Planteo del problema
 
 Nuestro objetivo es crear un modelo lineal múltiple para explicar el precio de venta en dólares de las propiedades en Capital Federal reportadas por la empresa [Properati Argentina](https://www.properati.com.ar/). 
 
-Vamos a utilizar datos del 2019 para no incorporar comportamientos atípicos ocasionados por la pandemia del COVID-19.
+Vamos a utilizar los datos del primer semestre del año 2022 correspondientes a publicaciones de propiedades de la República Argentina.
+
+La información fue extraída desde BigQuery (producto de Google Cloud para consultar grandes volúmenes de datos) donde la empresa disponibiliza sus datasets con avisos de propiedades y desarrollos inmobiliarios que están y estuvieron publicados en Properati en todo Latinoamérica desde 2015 hasta dos meses atrás. Los datos se actualizan diariamente.
+
 
 ### Lectura del dataset y su estructura
 
-La estructura del dataset consiste en 24 variables (columnas) y 388.891 observaciones (filas). Entre las variables figuran distintos tipos (character, date, logical o double): id, fechas, ubicacion geográfica, pais, provincia, barrio, características como número de habitaciones, baños, superficie total o cubierta, precio, tipo de propiedad, operación, entre otras.
+La estructura del dataset consiste en 19 variables (columnas) y 549.630 observaciones (filas). Entre las variables figuran distintos tipos (character, date o double): id, fechas, ubicación geográfica, país, provincia, barrio, características como número de habitaciones, baños, superficie total o cubierta, precio, tipo de propiedad, operación, entre otras.
 
 ```{r, warning=FALSE}
 # leo el archivo ar_properties 
-datos <- read_csv("../Fuentes/ar_properties.csv")
+datos <- read_csv("../Fuentes/ar_properties_2022.csv",show_col_types = FALSE)
 glimpse(datos)
 ```
 
+
 ### Aplicando filtros
 
-Se filtran aquellos registros que pertenecen a Argentina y Capital Federal, cuyo precio esta en dolares (USD), el tipo de propiedad corresponde a Departamento, PH o Casa, y el tipo de operacion sea Venta. 
+Se filtran aquellos registros que pertenecen a Argentina y Capital Federal, cuyo precio está en dolares (USD), el tipo de propiedad corresponde a Departamento, PH o Casa, y el tipo de operación sea Venta. 
 
 ```{r}
 # filtrando el dataset original
@@ -55,21 +60,21 @@ datos_filtrados <- datos %>%
                    # Me quedo con los que pertenecen a Argentina y Capital Federal
             filter(l1 == "Argentina", 
                    l2 == "Capital Federal", 
-                   # cuyo precio este en dolares 
+                   # cuyo precio esté en dólares 
                    currency == "USD", 
                    # propiedad tipo Departamento, PH o Casa
                    property_type %in% c("Departamento", "PH", "Casa"),
                    # operaciones de venta
-                   operation_type == "Venta")
+                   operation_type == "Venta" )
 ```
 
-Se obtuvo un dataset con 61905 observaciones y 24 variables. 
+Se obtuvo un dataset con 103.675 observaciones y 19 variables. 
 
 ```{r}
 # chequeo si el filtro se refleja correctamente en mi nuevo dataset datos1b
 head(datos_filtrados) 
-# veo la dimension del nuevo dataset
-dim(datos_filtrados) # 61905  24
+# veo la dimensión del nuevo dataset
+dim(datos_filtrados) # 103675  19
 ```
 
 ### Selección de variables de interés
@@ -77,12 +82,12 @@ dim(datos_filtrados) # 61905  24
 Se seleccionan las variables *id*, *l3*, *rooms*, *bedrooms*, *bathrooms*, *surface_total*,*surface_covered*, *price* y *property_type*. 
 
 ```{r}
-#selecciono solo las variables de la consigna (9 de las 24)
+#selecciono sólo las variables de interés (9 de las 19)
 datos_selec <- datos_filtrados %>% 
             select(id, l3, rooms, bedrooms, bathrooms, surface_total, surface_covered, price, property_type)
-# chequeo que la seleccion sea correcta
+# chequeo que la selección sea correcta
 head(datos_selec)
-# chequeo la dimension
+# chequeo la dimensión
 glimpse(datos_selec)
 ```
 
@@ -90,9 +95,10 @@ glimpse(datos_selec)
 
 ### Detección de valores unicos y faltantes
 
-Calculando la cantidad de valores únicos y faltantes para cada una de estas variables, se observa que la variable bedrooms presenta gran cantidad de faltantes (mas de 25000, 40% de los datos), mientras que las variables id, precios y tipo de propiedad ninguno. El resto registran entre 300 y 5000 faltantes aprox., faltantes menores al 10% de los datos.  
+Calculando la cantidad de valores únicos y faltantes para cada una de estas variables, se observa que las variables surface_covered y surface_total presentan gran cantidad de faltantes (70% de los datos), mientras que las variables id, precios y tipo de propiedad ninguno. La variable rooms presenta un 20% de datos faltantes y el resto registran entre 200 y 10.000 faltantes aprox.(menos del 10% de los datos).  
+
 ```{r}
-# Armo una tabla por variable que indique cantidad de faltantes y valores unicos que existe en el dataset
+# Armo una tabla por variable que indique cantidad de faltantes y valores únicos que existe en el dataset
 tabla <- datos_selec %>% gather(.,
                                  key   = Variables,
                                  value = Valores) %>% 
@@ -100,7 +106,7 @@ tabla <- datos_selec %>% gather(.,
   summarise(valores_unicos = n_distinct(Valores),
             valores_faltantes = sum(is.na(Valores)),
             porcentaje_faltantes = round(sum(is.na(Valores))/nrow(datos_selec)*100,2)) %>%
-  arrange(desc(porcentaje_faltantes), valores_unicos) # ordenamos por porcentaje de faltantes y valores unicos
+  arrange(desc(porcentaje_faltantes), valores_unicos) # ordenamos por porcentaje de faltantes y valores únicos
 tabla
 ```
 Graficando los valores faltantes. 
@@ -120,12 +126,12 @@ tabla %>%
 
 Se calcularon los coeficientes de correlación de pearson y spearman para las variables numéricas. Dado que el análisis exploratorio (ver más abajo) confirmó la presencia de valores atípicos, se optó finalmente por utilizar el segundo ya que permite obtener resultados más robustos ante presencia de outliers.  
 
-En este sentido, se observa que todas las variables analizadas presentan correlación positiva. Las variables rooms y bedrooms presentan una asociación lineal positiva fuerte (0.97) así como también la superficie cubierta y total (0.96). Se destaca también una correlación positiva significativa entre el precio y la superficie total y cubierta (0.84), y entre la superficie y el número de habitaciones.  
+En este sentido, se observa que todas las variables analizadas presentan correlación positiva. Las variables rooms y bedrooms presentan una asociación lineal positiva fuerte (0.97) así como también la superficie cubierta y total (0.96). Se destaca también una correlación positiva significativa entre el precio y la superficie total y cubierta (0.84), y entre la superficie y el número de habitaciones (0.87).  
 
 ```{r}
-# calculo matriz de correlacion para los registros completos (omitiendo faltantes) con ambos métodos 
+# calculo matriz de correlación para los registros completos (omitiendo faltantes) con ambos métodos 
 # pearson
-# selecciono variables numericas para poder calcular la matriz de correlacion
+# selecciono variables numéricas para poder calcular la matriz de correlación
 matriz.correl.pe <- datos_selec %>% select(where(is.numeric)) %>% 
  correlate(use = "complete.obs", method = "pearson") %>% 
   shave() %>% 
@@ -141,7 +147,7 @@ matriz.correl.sp %>%
 
 ### Interpretación de Correlación
 
-* Las variables superficie cubierta y total presentan una asociación lineal positiva fuerte (0.97), lo que supone que si una de las variables aumenta, la otra también aumentará y existe poca dispersión de los puntos en relación con la recta que los describe. 
+* Las variables superficie cubierta y total presentan una asociación lineal positiva fuerte (0.96), lo que supone que si una de las variables aumenta, la otra también aumentará y existe poca dispersión de los puntos en relación con la recta que los describe. 
 
 * Las variables rooms y bathrooms si bien presentan asociación positiva (aumentan cuando la otra aumenta), es más bien moderada (existe mayor dispersión de los puntos).   
 
@@ -151,7 +157,7 @@ matriz.correl.sp %>%
 
 ### Eliminación de la variable *bedrooms*
 
-Se elimina la variable bedrooms por registrar gran presencia de faltantes (más de 25000) y correlación positiva fuerte con la variable rooms (0.97). 
+Se elimina la variable bedrooms por registrar correlación positiva fuerte con la variable rooms (0.97). 
 
 ```{r}
 # armo nuevo dataset excluyendo la variable bedroom
@@ -162,42 +168,43 @@ head(datos_limpios)
 ```
 ### Eliminación de registros con valores faltantes
 
-Para evitar trabajar con imputación de datos, se decide eliminar los registros que presentan algún valor faltante. Esto representa alrededor del 15% del dataset
+Para evitar trabajar con imputación de datos, se decide eliminar los registros que presentan algún valor faltante. 
 
 ```{r}
 # elimino los registros faltantes
 datos_limpios <- datos_limpios %>% drop_na()
 # chequeo no haya registros faltantes
 head(datos_limpios)
-# chequeo dimension de mi nuevo dataset
-dim(datos_limpios) #51210  8 
+# chequeo dimensión de mi nuevo dataset
+dim(datos_limpios) #29598  8 
 ```
-Luego de eliminar la variable bedrooms y los registros con valores faltantes, se obtuvo un dataset con 51210 observaciones y 8 variables. 
+Luego de eliminar la variable bedrooms y los registros con valores faltantes, se obtuvo un dataset con 29.598 observaciones y 8 variables. 
 
-### Eliminación de registros con superficie total menor a superficie cubierta
+###Eliminación de registros con superficie total menor a superficie cubierta
 
-Se descartan 382 registros donde la superficie total resulta inferior a la cubierta, por tratarse probablemente de algún error de carga, quedando un dataset de 50828 filas y 8 columnas. 
+Se descartan 52 registros donde la superficie total resulta inferior a la cubierta, por tratarse probablemente de algún error de carga, quedando un dataset de 29.548 filas y 8 columnas.
 
 ```{r}
 # elimino los registros erróneos
 datos_limpios <- datos_limpios %>%
   filter(surface_total>=surface_covered) 
-# chequeo dimension de mi nuevo dataset
-dim(datos_limpios) # 50828  8 
+# chequeo dimensión de mi nuevo dataset
+dim(datos_limpios) # 29546  8 
 ```
+
 
 ## Analisis exploratorios
 
 ### Creación de nueva variable precio_en_miles y cálculo de estadisticas descriptivas
 
-Se generó una nueva variable de precios en miles de dólares. Calculando estadísticas descriptivas e histograma de dicha variable nueva, se puede observar que los precios tienen una distribución asimétrica a derecha, con la mediana (170 mil dólares) inferior a la media (252 mil dólares). Existe un desvío estándar de 293 mil dólares y un máximo que alcanza los 6 millones de dólares. 
+Se generó una nueva variable de precios en miles de dólares. Calculando estadísticas descriptivas e histograma de dicha variable nueva, se puede observar que los precios tienen una distribución asimétrica a derecha, con la mediana (140 mil dólares) inferior a la media (225 mil dólares). Existe un desvío estándar de 301 mil dólares y un máximo que alcanza los 7.5 millones de dólares. 
 
 ```{r}
 # genero una nueva variable de precios en miles para reducir escala en el gráfico
 datos_limpios <- datos_limpios %>% 
   mutate(precio_en_miles = round((price/1e3),0))
-# Calculo estadisticas descriptivas de la variable precio
-# minimo, primer cuartil (Q1), mediana (o Q2), promedio, Q3 y maximo 
+# Calculo estadísticas descriptivas de la variable precio
+# mínimo, primer cuartil (Q1), mediana (o Q2), promedio, Q3 y máximo 
 estad.descrip.precios <- datos_limpios %>% 
   summarise(Minimo = min(precio_en_miles), 
             Q1 = quantile(precio_en_miles, probs = 0.25), 
@@ -218,18 +225,18 @@ ggplot(data = datos_limpios, aes(x = precio_en_miles)) +
 
 ### Estadisticas descriptivas para la variable precio_en_miles por tipo de propiedad
 
-Se calcularon las principales estadísticas descriptivas de la variable precio por tipo de propiedad como así también la frecuencia de cada una de ellas. Esto ayuda a entender el peso relativo de cada tipo de propiedad en el precio. En este sentido, cabe destacar que la base de datos analizada cuenta con registros que corresponden en un 86.6% a departamentos, un 9.6% a PHs y sólo un 3.7% a casas en venta en Capital Federal. 
+Se calcularon las principales estadísticas descriptivas de la variable precio por tipo de propiedad como así también la frecuencia de cada una de ellas. Esto ayuda a entender el peso relativo de cada tipo de propiedad en el precio. En este sentido, cabe destacar que la base de datos analizada cuenta con registros que corresponden en un 87.3% a departamentos, un 9.1% a PHs y sólo un 3.6% a casas en venta en Capital Federal. 
 
 * Por otro lado, analizando las estadísticas descriptivas por tipo de propiedad se puede observar que, en **promedio**, las casas presentan mayores precios de venta que los departamentos y PHs. 
 
-* A priori parece que los precios tienen un comportamiento distinto en función del tipo de propiedad, moviéndose en diferentes rangos. El 75% de los departamentos se venden a precios inferiores a 260 mil dólares (Q3), mientras que en el caso de los PH, ese porcentaje llega a 270 mil y las casas a 490 mil dólares.
+* A priori parece que los precios tienen un comportamiento distinto en función del tipo de propiedad, moviéndose en diferentes rangos. El 75% de los departamentos se venden a precios inferiores a 230 mil dólares (Q3), mientras que en el caso de los PH, ese porcentaje llega a 199 mil y las casas a 475 mil dólares.
 
-* Asimimso, los **desvíos** muestran que existe mayor variabilidad de precios en el caso de las casas, seguida por departamentos.
+* Asimismo, los **desvíos** muestran que existe mayor variabilidad de precios en el caso de las casas, seguida por departamentos.
 
-* Los **mínimos** parecen bajos, en el caso del departamento figura uno de 6 mil dolares, pero habría que ver la relación precio por metro cuadrado para ver si se trata de un valor atípico, un error o simplemente de un terreno pequeño.   
+* Los **mínimos** parecen bajos, en el caso del departamento figura uno de 13 mil dolares, pero habría que ver la relación precio por metro cuadrado para ver si se trata de un valor atípico, un error o simplemente de una propiedad pequeña.   
 
 ```{r}
-# calculo estadisticas descriptivas pero agrupando por tipo de propiedad
+# calculo estadísticas descriptivas pero agrupando por tipo de propiedad
 datos_limpios %>% 
   group_by(property_type) %>% 
   summarise(Freq_abs = length(precio_en_miles), 
@@ -246,10 +253,10 @@ datos_limpios %>%
 
 Complementando los resultados observados del análisis de estadísticos, los boxplots paralelos permiten notar que hay gran presencia de valores atípicos.
 
-Asimismo, acotando la escala del gráfico se puede corroborar lo que se vio en las estadísticas descriptivas previas: que las casas presentan mayores precios y a su vez, mayor variabilidad. En efecto, el 50% central de los datos se mueve en un rango mayor de precios al de los departamentos y PHs. Entre departamentos y PHs, los primeros tendrian menores precios aunque variabilidad similar. 
+Asimismo, acotando la escala del gráfico se puede corroborar lo que se vio en las estadísticas descriptivas previas: que las casas presentan mayores precios y a su vez, mayor variabilidad. En efecto, el 50% central de los datos se mueve en un rango mayor de precios al de los departamentos y PHs. Entre departamentos y PHs, los primeros tendrían menores precios aunque variabilidad similar. 
 
 ```{r}
-# armo boxplots paralelos segun el tipo de propiedad (casa, dpto o ph)
+# armo boxplots paralelos según el tipo de propiedad (casa, dpto o ph)
 ggplot(datos_limpios, aes(y = precio_en_miles, group = property_type, fill = property_type )) +
   geom_boxplot() +
   labs(title = "Boxplots de precios por tipo de propiedad")+
@@ -259,7 +266,7 @@ ggplot(datos_limpios, aes(y = precio_en_miles, group = property_type, fill = pro
   labs(x = "Tipo de propiedad") +
   facet_wrap(~ property_type) +
   theme_bw()
-# Acotando la escala del grafico para visualizar mejor el 50% centra de datos
+# Acotando la escala del gráfico para visualizar mejor el 50% central de datos
 ggplot(datos_limpios, aes(y = precio_en_miles, group = property_type, fill = property_type )) +
   geom_boxplot() +
   labs(title = "Boxplots de precios por tipo de propiedad (escala acotada)")+
@@ -295,14 +302,14 @@ Respecto de nuestra variable a predecir, el precio en miles, observamos:
 
 ## Detección de Outliers
 
-Se van a hacer los análisis para outliers univariados teniendo en cuenta que según los gráficos anteriores parecen existir valores atipicos para la superficie y la cantidad de cuartos.
+Se van a hacer los análisis para outliers univariados teniendo en cuenta que según los gráficos anteriores parecen existir valores atípicos para la superficie y la cantidad de cuartos.
 
 **Scatterplot de la variable precio_en_miles y superficie_total**
 
 De una primera visualización, parece haber presencia de outliers. 
 
 ```{r}
-# grafico los precios en funcion superficie para detectar algun outlier visualmente 
+# grafico los precios en función superficie para detectar algún outlier visualmente 
 ggplot(datos_limpios, aes(x = surface_total, y = precio_en_miles, color = property_type)) + 
   geom_point(alpha = 0.75) +
   scale_color_brewer(palette = "Set1") +  
@@ -319,9 +326,16 @@ ggplot(datos_limpios, aes(x = rooms, y = precio_en_miles, color = property_type)
   labs(y = "Precios por metro cuadrado", x = "Número de habitaciones") +
   ggtitle("Scatterplot: precios en función del número de habitaciones") 
 ```
-En particular, se destaca la presencia de un regitro atípico correspondiente a un PH de 126000 metros de superficie por 215 mil dolares y de un registro de un numero de ambientes de 32, también correspondiente a un PH en San Telmo. 
 
-Se analizaron asimismo otros datos atípicos, efectuando filtros a dichas variables. En algunos casos se detectaron errores que podrían deberse a errores de carga o de escala de medición. Estos casos se tratarán luego con los métodos de tratamiento de outliers que se describen a continuación. Respecto de las habitaciones/ambientes, no parece haber otro valor atípico que llame precisamente la atención.
+En particular, se destaca la presencia de cuatro registros atípicos correspondientes a departamentos de más de 10000 metros de superficie con  precios entre  115 mil  y 220 mil dolares.
+
+```{r}
+# vemos los registros con superficie cubierta mayor a 10000 m2
+datos_limpios %>%
+  filter(surface_total>=10000) 
+```
+
+Se analizaron asimismo otros datos atípicos, efectuando filtros a las variables **rooms** , **bathrooms** y **surface_total**. En algunos casos se detectaron errores que podrían deberse a errores de carga o de escala de medición. Estos casos se tratarán luego con los métodos de tratamiento de outliers que se describen a continuación. 
 
 ```{r}
 # chequeo algunos registros que parecen atípicos
@@ -333,7 +347,7 @@ max(datos_limpios$rooms)
 
 Para detectar presencia de outliers, además de analizar los scatterplot, se definió crear una variable de precio por metro cuadrado ya que, de proceder sólo empleando los precios, se correría el riesgo de eliminar propiedades de precios altos que en realidad corresponden a superficies más amplias y no serían valores atípicos. Por lo que, detectar outliers en base a esta nueva variable es una forma de evitar incurrir en errores de ese estilo.  
 
-En efecto, de un primer análisis de esta nueva variable surge que el valor máximo asciende a cerca de 125 mil dólares, lo que excede ampliamente el precio por metro en cualquier barrio porteño, incluso los más caros. En los boxplots paralelos se observa claramente presencia de outliers en los tres tipos de propiedades, que no permiten sacar conclusiones acerca de los distintos tipos de propiedades.  
+En efecto, de un primer análisis de esta nueva variable surge que el valor máximo asciende a cerca de 21 mil dólares, lo que excede ampliamente el precio por metro en cualquier barrio porteño, incluso los más caros. En los boxplots paralelos se observa claramente presencia de outliers en los tres tipos de propiedades, que no permiten sacar conclusiones acerca de los distintos tipos de propiedades.  
 
 ```{r}
 # armo una nueva variable que sea precios por metro (superficie)
@@ -350,9 +364,9 @@ ggplot(data = datos_sin_outliers, aes(x = pxmt)) +
 
 ### Usando 3 desvíos del rango intercuartil para las variables y valor de corte
 
-El filtro de outliers utilizado es una "adaptación" del criterio de Tukey que usualmente usa 1.5 veces la distancia intercuartil. Se optó por adicionar un criterio de valor de corte porque la técnica de desvíos del RI resulta insufiente para detectar outliers a izquierda en una distribución asimétrica a derecha. 
+El filtro de outliers utilizado es una "adaptación" del criterio de Tukey que usualmente usa 1.5 veces la distancia intercuartil. Se optó por adicionar un criterio de valor de corte porque la técnica de desvíos del RI resulta insuficiente para detectar outliers a izquierda en una distribución asimétrica a derecha. 
 
-Se tomó como valor de corte 750 dólares por metro cuadrado ya que de acuerdo a un relevamento de Evolución histórica del valor del metro cuadrado en CABA - Deptos. 2, 3 ambientes en USD ajustados por inflación, el valor mínimo fue de 783 dolares el metro cuadrado. [Link al blog properati](https://blog.properati.com.ar/el-valor-del-metro-cuadrado-esta-realmente-en-su-pico-historico/)
+Se tomó como valor de corte 750 dólares por metro cuadrado ya que de acuerdo a un relevamiento de Evolución histórica del valor del metro cuadrado en CABA - Deptos. 2, 3 ambientes en USD ajustados por inflación, el valor mínimo fue de 783 dolares el metro cuadrado. [Link al blog properati](https://blog.properati.com.ar/el-valor-del-metro-cuadrado-esta-realmente-en-su-pico-historico/)
 
 ```{r}
 pxmt_sup = IQR(datos_sin_outliers$pxmt) * 3 + quantile(datos_sin_outliers$pxmt, 0.75)
@@ -365,27 +379,28 @@ rooms_inf = quantile(datos_sin_outliers$rooms, 0.25) - IQR(datos_sin_outliers$ro
 rooms_inf
 
 datos_sin_outliers = datos_sin_outliers %>% 
-  filter(between(pxmt, 750, pxmt_sup), between(rooms, 0, rooms_sup)) # redondeo en 500 el 496.5 y pongo el valor minimo de una casa no puede ser menor a 10 mil
-glimpse(datos_sin_outliers)# 49835
+  filter(between(pxmt, 750, pxmt_sup), between(rooms, 0, rooms_sup)) 
+
+glimpse(datos_sin_outliers)# 28773 10
 nrow(datos_limpios) - nrow(datos_sin_outliers) 
 ```
 
-Luego de aplicar ambos métodos de eliminación de valores atípicos, se obtuvo un dataset final de 49.835 registros y 10 variables. Es decir, se eliminaron en total 993 registros (menos del 2% del total). 
+Luego de aplicar ambos métodos de eliminación de valores atípicos, se obtuvo un dataset final de 28.773 registros y 10 variables. Es decir, se eliminaron en total 773 registros (menos del 3% del total). 
 
 ## Se repite analisis exploratorio al dataset sin outliers
 
-A través de las estadísticas descriptivas se puede ver cómo se redujo el **promedio** (de 252 a 234) y el **desvío estándar** (de 293 a 226), mientras la mediana y los cuartiles permanecieron estables. Esto es así por la alta sensibilidad de la media y el desvío a outliers y la robustez de los demás estadísticas frente a valores atípicos. El valor mínimo es mayor (de 6 a 12) y el máximo algo inferior (de 6000 a 5700).
+A través de las estadísticas descriptivas se puede ver cómo se redujo el **promedio** (de 225 a 205) y el **desvío estándar** (de 301 a 215), mientras la mediana y los cuartiles permanecieron estables. Esto es así por la alta sensibilidad de la media y el desvío a outliers y la robustez de los demás estadísticas frente a valores atípicos. El valor mínimo es mayor (de 13 a 20) y el máximo inferior (de 7500 a 3800).
 
 El histograma de precios y los boxplots paralelos según tipo de propiedad para esos precios en miles de dólares no se modificó demasiado, se vuelve a corroborar que las casas presentan en general precios más altos y, a su vez, mayor variabilidad de precios que los deparamientos y PHs. 
 
 Ahora bien, al analizar los precios por metro cuadrado, los departamentos son los que presentan los valores más altos, seguidos por los PH y por último las casas. Esto implica que los precios más altos que se registran en las casas se asocian a superficies más grandes. 
 
-El correlograma sin outliers permite visualizar mejor la asociación lineal entre las distintas variables numéricas. En particular, se ve más claramente la asociación lineal entre el precio y la superficie al eliminar los valores atípicos de ambas variables, a diferencia de lo que ocurría en el dataset original, que no se percibái por el scatterplot dicho vínculo.
+El correlograma sin outliers permite visualizar mejor la asociación lineal entre las distintas variables numéricas. En particular, se ve más claramente la asociación lineal entre el precio y la superficie al eliminar los valores atípicos de ambas variables, a diferencia de lo que ocurría en el dataset original, que no se percibía por el scatterplot dicho vínculo.
 
 Asimismo, el color de los gráficos permite visualizar comportamientos distintos de las variables según el tipo de propiedad. Esto ya se podía notar en el correlograma previo. 
 
 ```{r}
-# Tabla de estadisticas descriptivas de la variable precio para el nuevo conjunto de datos sin outliers
+# Tabla de estadísticas descriptivas de la variable precio para el nuevo conjunto de datos sin outliers
 datos_sin_outliers %>%
   summarise(Minimo = min(precio_en_miles), 
             Q1 = quantile(precio_en_miles, probs = 0.25), 
@@ -395,19 +410,19 @@ datos_sin_outliers %>%
             Maximo = max(precio_en_miles), 
             Desvio = round(sd(precio_en_miles),0))
 
-# Armo histograma para ver distribucion de precios en miles del nuevo dataset
+# Armo histograma para ver distribución de precios en miles del nuevo dataset
 ggplot(data = datos_sin_outliers, aes(x = precio_en_miles)) + 
   geom_histogram(col = "white", aes( fill = ..count..), alpha = 0.75) +
   labs(title = "Histograma de precios de propiedades") +
   labs(x = "Precio en miles de USD") +
   theme_minimal()
 
-# Tabla de estadisticas descriptivas por tipo de propiedad
+# Tabla de estadísticas descriptivas por tipo de propiedad
 datos_sin_outliers %>% 
   group_by(property_type) %>% 
   summarise(Minimo = min(precio_en_miles), Q1 = quantile(precio_en_miles, probs = 0.25), Mediana = quantile(precio_en_miles, probs = 0.5), Promedio = round(mean(precio_en_miles),0), Q3 = quantile(precio_en_miles, probs = 0.75),  Maximo = max(precio_en_miles), Desvio = round(sd(precio_en_miles),0))
 
-# Armo boxplots paralelos segun el tipo de propiedad (casa, dpto o ph) con el nuevo dataset
+# Armo boxplots paralelos según el tipo de propiedad (casa, dpto o ph) con el nuevo dataset
 ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
   geom_boxplot() +
   labs(title = "Boxplots de precios por tipo de propiedad")+
@@ -419,7 +434,7 @@ ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
   labs(x = "Tipo de propiedad") +
   facet_wrap(~ property_type)
 
-# Armo boxplots paralelos de precios por metro cuadrado segun el tipo de propiedad sin outliers
+# Armo boxplots paralelos de precios por metro cuadrado según el tipo de propiedad sin outliers
 ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
   geom_boxplot() +
   labs(title = "Boxplots de precios por tipo de propiedad") +
@@ -427,7 +442,7 @@ ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
   theme_minimal() +
   scale_fill_brewer(palette = "PRGn") +
   scale_y_continuous() +
-  labs(y = "Precio en miles") +
+  labs(y = "Precio en miles de USD") +
   labs(x = "Tipo de propiedad") +
   facet_wrap(~ property_type)
 
@@ -437,11 +452,11 @@ ggplot(datos_sin_outliers, aes(x = surface_total, y = precio_en_miles, color = p
   scale_color_brewer(palette = "Set1") +  
   theme(legend.position = "none") +
   theme_minimal() +
-  labs(y = "Precios en miles", x = "Superficie total") +
+  labs(y = "Precios en miles de USD", x = "Superficie total") +
   ggtitle("Scatterplot: precios en función de superficie total") 
 ```
 
-Rearmando el histograma de precios por metro sin outliers, se observa mucho más clara la distribución de precios por metro cuadrado, con valores máximos que rondan los 6000 dólares en barrios de los más caros como puerto madero. 
+Rearmando el histograma de precios por metro sin outliers, se observa mucho más clara la distribución de precios por metro cuadrado, con valores máximos que rondan los 5000 dólares en barrios de los más caros como Puerto Madero. 
 
 ```{r}
 # Armo histograma de precios x metro cuadrado
@@ -451,7 +466,7 @@ ggplot(data = datos_sin_outliers, aes(x = pxmt)) +
   labs(x = "Precio por m2") +
   theme_minimal()
 ```
-Graficando nuevamente ggpairs, se puede observar que mejoran sustancialmente las visualizaciones, que antes  
+Graficando nuevamente ggpairs, se puede observar que mejoran sustancialmente las visualizaciones.
 
 ```{r, message=FALSE,  progress=FALSE, warning=FALSE, fig.width=8, fig.height=6}
 datos_sin_outliers %>%
@@ -464,15 +479,15 @@ datos_sin_outliers %>%
 
 Respecto de nuestra variable a predecir, el precio en miles, observamos:
 
-* Existe una correlación positiva fuerte con las superficies total y cubierta. Respecto a estas últimas existe una gran diferencia en la correlación según el tipo de propiedad. Las casas parecen presentar menor correlación que los departamentos y PHs.
+* Existe una correlación positiva fuerte con las superficies total y cubierta. Respecto a estas últimas existen diferencias en la correlación según el tipo de propiedad. Las casas parecen presentar menor correlación que los departamentos y PHs.
 
 * Existe una correlación positiva menor con el número de habitaciones y baños. 
 
 * Ya no se observan outliers.
-
 ```{r}
 glimpse(datos_sin_outliers)
-write.csv(datos_sin_outliers %>% select(-c(pxmt)), file = "properati_preprocesado.csv", row.names=FALSE)
-write_csv(datos_sin_outliers %>% select(-c(pxmt)), file = "properati_preprocesado_.csv")
+write.csv(datos_sin_outliers %>% select(-c(pxmt)), file = "properati_preprocesado_2022.csv", row.names=FALSE)
+write_csv(datos_sin_outliers %>% select(-c(pxmt)), file = "properati_preprocesado_2022_.csv")
 ```
+
 
