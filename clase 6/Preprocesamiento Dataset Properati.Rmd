@@ -180,9 +180,9 @@ dim(datos_limpios) #29598  8
 ```
 Luego de eliminar la variable bedrooms y los registros con valores faltantes, se obtuvo un dataset con 29.598 observaciones y 8 variables. 
 
-###Eliminación de registros con superficie total menor a superficie cubierta
+### Eliminación de registros con superficie total menor a superficie cubierta
 
-Se descartan 52 registros donde la superficie total resulta inferior a la cubierta, por tratarse probablemente de algún error de carga, quedando un dataset de 29.548 filas y 8 columnas.
+Se descartan 52 registros donde la superficie total resulta inferior a la cubierta, por tratarse probablemente de algún error de carga, quedando un dataset de 29.546 filas y 8 columnas.
 
 ```{r}
 # elimino los registros erróneos
@@ -435,14 +435,14 @@ ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
   facet_wrap(~ property_type)
 
 # Armo boxplots paralelos de precios por metro cuadrado según el tipo de propiedad sin outliers
-ggplot(datos_sin_outliers, aes(y = precio_en_miles, fill = property_type )) +
+ggplot(datos_sin_outliers, aes(y = pxmt, fill = property_type )) +
   geom_boxplot() +
-  labs(title = "Boxplots de precios por tipo de propiedad") +
+  labs(title = "Boxplots de precios por m2 por tipo de propiedad") +
   theme(legend.position = 'none') +
   theme_minimal() +
   scale_fill_brewer(palette = "PRGn") +
   scale_y_continuous() +
-  labs(y = "Precio en miles de USD") +
+  labs(y = "Precio m2 en miles de USD") +
   labs(x = "Tipo de propiedad") +
   facet_wrap(~ property_type)
 

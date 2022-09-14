@@ -217,13 +217,13 @@ tidy_sc_pt
 El modelo de regresión lineal en este caso consiste simplemente en expresar
 la media del nivel de precios en cada población (de casas, departamentos o PHs) mediante tres coeficientes distintos, donde: 
 
-* $\beta_0$ (categoría basal de variable categórica) es la media del precio para las Casas sin superficie. En este modelo es de `r round(tidy_sc_pt$estimate[1])` dólares, lo que carece de sentido económico ya que las casas deberían tener alguna superficie y no podrían tener un precio negativo.  
+* $\hat{\beta_0}$ (categoría basal de variable categórica) es la media del precio para las Casas sin superficie. En este modelo es de `r round(tidy_sc_pt$estimate[1])` dólares, lo que carece de sentido económico ya que las casas deberían tener alguna superficie y no podrían tener un precio negativo.  
 
-* $\beta_0 + \beta_{property\_typeDepartamento}$ es la media del precio para los departamentos, dada la superficie. Por lo tanto, $\beta_{property\_typeDepartamento}$ es la diferencia en los **niveles medios** de precios de los departamentos respecto de las casas (categoría basal).Es decir, $\beta_{property\_typeDepartamento}$ (`r round(tidy_sc_pt$estimate[3])`) indica cuánto más alta es la función de respuesta (precio) para los departamentos respecto de las casas (categoría basal), dada la superficie.
+* $\hat{\beta_0}$ + $\hat{\beta_{property\_typeDepartamento}}$ es la media del precio para los departamentos, dada la superficie. Por lo tanto, $\hat{\beta_{property\_typeDepartamento}}$ es la diferencia en los **niveles medios** de precios de los departamentos respecto de las casas (categoría basal).Es decir, $\hat{\beta_{property\_typeDepartamento}}$ (`r round(tidy_sc_pt$estimate[3])`) indica cuánto más alta es la función de respuesta (precio) para los departamentos respecto de las casas (categoría basal), dada la superficie.
 
-* Vemos que el nivel medio del precio es una función lineal de la superficie de la propiedad, con una misma pendiente $\beta_{surface\_covered}$ `r round(tidy_sc_pt$estimate[2])` para casas, departamentos y PHs. 
+* Vemos que el nivel medio del precio es una función lineal de la superficie de la propiedad, con una misma pendiente $\hat{\beta_{surface\_covered}}$ (`r round(tidy_sc_pt$estimate[2])`) para casas, departamentos y PHs. 
 
-¿Cómo se interpretaría entonces $\beta_{property\_typePH}$? ¿Y $\beta_0 + \beta_{property\_typePH}$?
+¿Cómo se interpretaría entonces $\hat{\beta_{property\_typePH}}$? ¿Y $\hat{\beta_0} + \hat{\beta_{property\_typePH}}$?
 
 #### Grafiquemos la regresión para las tres poblaciones
 
@@ -247,7 +247,7 @@ train_data %>% ggplot(., aes(x = surface_covered, y = price)) +
   labs(title="Modelo Lineal Múltiple: Superficie y Tipo de Propiedad", x="Superficie en m2", y="Precio en USD") 
 ```
 
-### *Predictores Cualitativos con muchas clases*
+### *3) Predictores Cualitativos con muchas clases*
 
 La variable barrios (l3) tiene 55 niveles distintos. Veamos a través de boxplots paralelos cómo se comportan. 
 
@@ -296,9 +296,9 @@ R cuando efectúa la regresión calcula automáticamente las variables indicador
 
 * Este modelo propone ajustar una recta distinta para el precio **medio** de cada población definida por el barrio, todas con igual pendiente (definida por la superficie), y 55 ordenadas al origen diferentes, una por cada barrio.
 
-* Por ejemplo, eligiendo un barrio de precios altos, vemos que $\beta_{Belgrano}$ indica cuánto se incrementa el precio medio de las propiedades para aquellos inmuebles ubicados en Belgrano respecto de aquellos ubicados en Abasto (categoría basal), dada la superficie.
+* Por ejemplo, eligiendo un barrio de precios altos, vemos que $\hat{\beta_{Belgrano}}$ indica cuánto se incrementa el precio medio de las propiedades para aquellos inmuebles ubicados en Belgrano respecto de aquellos ubicados en Abasto (categoría basal), dada la superficie.
 
-* Analizando un barrio de precios bajos, $\beta_{Boca}$ indica cuánto se reduce el precio medio de las propiedades ubicadas en la Boca respecto de aquellas ubicadas en Abasto (categoría basal), dada la superficie.
+* Analizando un barrio de precios bajos, $\hat{\beta_{Boca}}$ indica cuánto se reduce el precio medio de las propiedades ubicadas en la Boca respecto de aquellas ubicadas en Abasto (categoría basal), dada la superficie.
 
 ## Inferencia de los $β_k$ (test de significatividad individual)
 
