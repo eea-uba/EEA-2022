@@ -21,9 +21,11 @@ div.main-container {
 
 ```{r message=FALSE, warning=FALSE}
 library(tidyverse)
+library(broom)
 ```
 
 Basado en los [tutoriales de PURRR](https://jennybc.github.io/purrr-tutorial/index.html) de Jenny Bryan y el capítulo [Iteration](https://r4ds.had.co.nz/iteration.html) del libro R for Data Science de Garrett Grolemund y Hadley Wickham
+
 
 # PURRR
 
@@ -230,13 +232,13 @@ modelos_por_perfil
 
 #### Acceso a la información
 
-Podemos trabajar sobre esta lista de modelos de distintas maneras. Por ejemplo, podemos acceder a la información de los coeficientes estimados de ambos modelos usando también la función `map`
+Podemos trabajar sobre esta lista de modelos de distintas maneras. Por ejemplo, podemos acceder a la información de los coeficientes estimados de cada modelo usando también la función `map`
 
 ```{r}
 modelos_por_perfil %>% 
   map("coefficients")
 ```
-También podemos aplicar la función `summary` y acceder a la información de $R^2$ de ambos modelos para evaluar su capacidad explicativa (en este caso como son modelos simples podemos utilizar esta métrica).
+También podemos aplicar la función `summary` y acceder a la información de $R^2$ de los modelos para evaluar su capacidad explicativa (en este caso como son modelos simples podemos utilizar esta métrica).
 
 ```{r}
 modelos_por_perfil %>% 
@@ -244,7 +246,7 @@ modelos_por_perfil %>%
   map_dbl("r.squared")
 ```
 
-Mientras el modelo de edad para los perfiles BI/DA logra explicar el `r round((modelos_por_perfil %>% map(summary) %>% map_dbl("r.squared"))[1]*100,2)`% de la variabilidad del fenómeno, el modelo de edad para los DS/DE logra captar un porcentaje menor de la variabilidad (`r round((modelos_por_perfil %>% map(summary) %>% map_dbl("r.squared"))[2]*100,2)`%). 
+Mientras el modelo de edad para el perfil DE logra explicar el `r round((modelos_por_perfil %>% map(summary) %>% map_dbl("r.squared"))[2]*100,2)`% de la variabilidad del fenómeno, el modelo de edad para los BI/DA y el modelo de edad para los DS captan un porcentaje menor de la variabilidad (`r round((modelos_por_perfil %>% map(summary) %>% map_dbl("r.squared"))[1]*100,2)`% y `r round((modelos_por_perfil %>% map(summary) %>% map_dbl("r.squared"))[3]*100,2)`% respectivamente).
 
 #### Acceso a la información: Broom
 
