@@ -92,8 +92,9 @@ Interpretación de coeficientes en Regresión Lineal Múltiple, inclusión de va
 
 #### Dataset Notebook Modelo Lineal Múltiple
 
-- [Dataset Properati](Fuentes/ar_properties.csv)
+- [Dataset Properati](Fuentes/ar_properties_2022.csv)
 - [Preprocesamiento Dataset Properati](clase 6/Preprocesamiento Dataset Properati.nb.html)
+- [Consulta SQL (BigQuery)](Fuentes/properati_bq.sql)
 
 ### Clase 7: 24-09
 
@@ -103,7 +104,7 @@ Evaluación y diagnóstico del modelo. Explicación vs predicción.
 
 #### Dataset Preprocesado Modelo Lineal Múltiple
 
-- [Datos Properati Preprocesados](clase 6/properati_preprocesado.csv)
+- [Datos Properati Preprocesados](clase 6/properati_preprocesado_2022.csv)
 
 ### Clase 8: 01-10
 

@@ -1,7 +1,7 @@
 ---
 title: "Regresión Lineal Múltiple I"
-author: "Juan Barriola y Sofía Perini"
-date: "2 de Octubre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "17 de septiembre de 2022"
 output:
   html_notebook:
     theme: spacelab
@@ -30,7 +30,7 @@ options(scipen=999)
 
 Nuestro objetivo es crear un modelo lineal múltiple para explicar el precio de venta en dólares de las propiedades en Capital Federal reportadas por la empresa [Properati Argentina](https://www.properati.com.ar/). 
 
-Vamos a utilizar datos del 2019 para no incorporar comportamientos atípicos ocasionados por la pandemia del COVID-19.
+Vamos a utilizar los datos del primer semestre del año 2022 correspondientes a publicaciones de propiedades de la República Argentina.
 
 Nuestra idea subyacente de cómo se puede explicar el precio es:
 
@@ -46,20 +46,20 @@ library(GGally)
 
 ## Levantamos Dataset
 
-Vamos a trabajar con un subconjunto de datos que surgió de un trabajo de limpieza y tratamiento de outliers que se puede consultar en el notebook de Preprocesamiento Dataset Properati, correspondiente a precios de propiedades en Capital Federal, cuyo precio está expresado en dolares (USD), el tipo de propiedad corresponde a Departamento, PH o Casa, y el tipo de operacion sea Venta. 
+Vamos a trabajar con un subconjunto de datos que surgió de un trabajo de limpieza y tratamiento de outliers que se puede consultar en el notebook "Preprocesamiento Dataset Properati", correspondiente a precios de propiedades en Capital Federal, cuyo precio está expresado en dolares (USD), el tipo de propiedad corresponde a Departamento, PH o Casa, y el tipo de operación sea Venta. 
 
 ```{r, message=F}
-datos_properati <- read.csv("properati_preprocesado.csv")
+datos_properati <- read.csv("properati_preprocesado_2022.csv")
 glimpse(datos_properati)
 ```
 
-La limpieza consistió en: eliminar la variable bedrooms por registrar gran presencia de faltantes (40%) y correlación positiva fuerte con la variable rooms (0.97), eliminar los registros con faltantes, descartar registros donde la superficie total resulta inferior a la cubierta, por tratarse probablemente de algún error de carga. Por último, se realizó un tratamiento de los outliers, empleando las técnicas vistas en la clase 3, quedando como resultado un dataset de 49.835 observaciones y 9 columnas, con el que trabajaremos a continuación. 
+La limpieza consistió en: eliminar la variable bedrooms por registrar correlación positiva fuerte con la variable rooms (0.97) y eliminar los registros con faltantes. Por último, se realizó un tratamiento de los outliers, empleando las técnicas vistas en la clase 3, quedando como resultado un dataset de 28.773 observaciones y 9 columnas, con el que trabajaremos a continuación. 
 
 ### Seleccionamos variables de interés
 
 En este caso ya están preseleccionadas 9 variables:
 
-- *id*: identificacion.
+- *id*: identificación.
 - *l3*: barrio.
 - *rooms*: nro de habitaciones.
 - *bathrooms*: nro de baños
@@ -93,11 +93,11 @@ for(i in 1:g$nrow) {
 g 
 ```
 
-* Las variables superficie cubierta y total presentan una asociación lineal positiva fuerte (0.945).
+* Las variables superficie cubierta y total presentan una asociación lineal positiva fuerte (0.952).
 
 Respecto de nuestra variable a predecir, el precio, observamos que:
 
-* Existe una correlación positiva fuerte con las superficies total y cubierta. Respecto a estas últimas existe una gran diferencia en la correlación según el tipo de propiedad. Las casas parecen presentar menor correlación que los departamentos y PHs.
+* Existe una correlación positiva fuerte con las superficies total y cubierta. Respecto a estas últimas existe diferencia en la correlación según el tipo de propiedad. Las casas parecen presentar menor correlación que los departamentos y PHs.
 
 * Existe una correlación positiva menor con el número de habitaciones y baños. 
 
@@ -107,17 +107,18 @@ En este caso para evaluar los modelos vamos a realizar una partición entre data
 
 ```{r}
 # fijamos semilla
-set.seed(2021)
+set.seed(22)
 # Partición Train y Test, indicando proporción
 train_test <- initial_split(datos_properati, prop = 0.75)
 train_data <- training(train_test)
 test_data <- testing(train_test)
-# vemos las dimensiones de cada particion
+# vemos las dimensiones de cada partición
 train_data %>%
   dim_desc() 
 test_data %>%
   dim_desc() 
 ```
+
 El dataset de test lo utilizaremos en la siguiente clase. 
 
 ## Modelo Múltiple
@@ -152,7 +153,7 @@ Veamos cómo se interpretan los ajustes para los distintos tipos de predictores.
 Armemos un modelo para predecir el precio en función de la superficie cubierta y la cantidad de habitaciones. Veamos los resultados del modelo empleando la función tidy(). 
 
 ```{r}
-# ajustamos modelo lineal multiple
+# ajustamos modelo lineal múltiple
 modelo_sc_r <- lm(price ~ surface_covered + rooms, data = train_data)
 # Resumen del modelo
 tidy_sc_r <- tidy(modelo_sc_r, conf.int = TRUE)
@@ -172,7 +173,7 @@ tidy_sc_r
 Armemos un modelo para predecir el precio de la propiedad en función de la superficie cubierta y el tipo de propiedad (*property_type*), que es categórica con tres niveles (Casa, Departamento o PH). Para ello, vamos a analizar primero el comportamiento de la variable que queremos predecir para cada tipo de propiedad a través de un boxplot. 
 
 ```{r}
-# armamos boxplots paralelos de precio segun el tipo de propiedad (casa, dpto o ph)
+# armamos boxplots paralelos de precio según el tipo de propiedad (casa, dpto o ph)
 ggplot(data = train_data, aes(y = precio_en_miles, group = property_type, fill = property_type)) +
          geom_boxplot() + 
          scale_fill_brewer(palette="Dark2") +
@@ -185,7 +186,7 @@ ggplot(data = train_data, aes(y = precio_en_miles, group = property_type, fill =
   facet_wrap(~property_type)
 ```
 ```{r}
-# Acotando la escala del grafico para visualizar mejor el rango intercuartil
+# Acotando la escala del gráfico para visualizar mejor el rango intercuartil
 ggplot(data = train_data, aes(y = precio_en_miles, group = property_type, fill = property_type)) +
          geom_boxplot() + 
          scale_fill_brewer(palette="Dark2") +
@@ -216,13 +217,13 @@ tidy_sc_pt
 El modelo de regresión lineal en este caso consiste simplemente en expresar
 la media del nivel de precios en cada población (de casas, departamentos o PHs) mediante tres coeficientes distintos, donde: 
 
-* $\beta_0$ (categoría basal de variable categórica) es la media del precio para las Casas sin superficie. En este modelo es de `r round(tidy_sc_pt$estimate[1])` dólares, lo que carece de sentido económico ya que las casas deberían tener alguna superficie y no podrían tener un precio negativo.  
+* $\hat{\beta_0}$ (categoría basal de variable categórica) es la media del precio para las Casas sin superficie. En este modelo es de `r round(tidy_sc_pt$estimate[1])` dólares, lo que carece de sentido económico ya que las casas deberían tener alguna superficie y no podrían tener un precio negativo.  
 
-* $\beta_0 + \beta_{property\_typeDepartamento}$ es la media del precio para los departamentos, dada la superficie. Por lo tanto, $\beta_{property\_typeDepartamento}$ es la diferencia en los **niveles medios** de precios de los departamentos respecto de las casas (categoría basal).Es decir, $\beta_{property\_typeDepartamento}$ (`r round(tidy_sc_pt$estimate[3])`) indica cuánto más alta es la función de respuesta (precio) para los departamentos respecto de las casas (categoría basal), dada la superficie.
+* $\hat{\beta_0}$ + $\hat{\beta_{property\_typeDepartamento}}$ es la media del precio para los departamentos, dada la superficie. Por lo tanto, $\hat{\beta_{property\_typeDepartamento}}$ es la diferencia en los **niveles medios** de precios de los departamentos respecto de las casas (categoría basal).Es decir, $\hat{\beta_{property\_typeDepartamento}}$ (`r round(tidy_sc_pt$estimate[3])`) indica cuánto más alta es la función de respuesta (precio) para los departamentos respecto de las casas (categoría basal), dada la superficie.
 
-* Vemos que el nivel medio del precio es una función lineal de la superficie de la propiedad, con una misma pendiente $\beta_{surface_total}$ `r round(tidy_sc_pt$estimate[2])` para casas, departamentos y PHs. 
+* Vemos que el nivel medio del precio es una función lineal de la superficie de la propiedad, con una misma pendiente $\hat{\beta_{surface\_covered}}$ (`r round(tidy_sc_pt$estimate[2])`) para casas, departamentos y PHs. 
 
-¿Cómo se interpretaría entonces $\beta_{property\_typePH}$? ¿Y $\beta_0 + \beta_{property\_typePH}$?
+¿Cómo se interpretaría entonces $\hat{\beta_{property\_typePH}}$? ¿Y $\hat{\beta_0} + \hat{\beta_{property\_typePH}}$?
 
 #### Grafiquemos la regresión para las tres poblaciones
 
@@ -246,13 +247,13 @@ train_data %>% ggplot(., aes(x = surface_covered, y = price)) +
   labs(title="Modelo Lineal Múltiple: Superficie y Tipo de Propiedad", x="Superficie en m2", y="Precio en USD") 
 ```
 
-### *Predictores Cualitativos con muchas clases*
+### *3) Predictores Cualitativos con muchas clases*
 
-La variable barrios (l3) tiene 57 niveles distintos. Veamos a través de boxplots paralelos cómo se comportan. 
+La variable barrios (l3) tiene 55 niveles distintos. Veamos a través de boxplots paralelos cómo se comportan. 
 
 ```{r, fig.width=10, fig.height=5}
-length(unique(datos_properati$l3)) # 57 barrios
-# armo scatterplot de precios en miles en función de superficie total
+length(unique(datos_properati$l3)) # 55 barrios
+# armo boxplots paralelos precios en función de los barrios
 ggplot( datos_properati, aes(x = fct_reorder(l3, price, .desc = T), y = price/1000)) + 
   geom_boxplot(alpha = 0.75, aes(fill = l3)) + 
   theme_minimal() + 
@@ -265,7 +266,7 @@ ggplot( datos_properati, aes(x = fct_reorder(l3, price, .desc = T), y = price/10
 Dado que la presencia de outliers univariados dificulta la observación, realizamos nuevamente el gráfico quitando estas observaciones atípicas.
 
 ```{r, warning=FALSE,fig.width=10, fig.height=5}
-# armamos scatterplot de precios en miles en función de superficie total
+# armo boxplots paralelos precios en función de los barrios
 ggplot(datos_properati, aes(x = fct_reorder(l3, price, .desc = T), y = price/1000)) + 
   geom_boxplot(outlier.shape = NA, alpha = 0.75, aes(fill = l3)) + 
   theme_minimal() + 
@@ -276,9 +277,9 @@ ggplot(datos_properati, aes(x = fct_reorder(l3, price, .desc = T), y = price/100
   theme (axis.text.x = element_text(face="italic", colour="dark grey", size = 8, angle = 90))
 ```
 
-En los boxplots paralelos de precios por barrios se puede ver que entre los barrios que presentan mayores precios se ubican: Puerto Madero,Las Cañitas, Catalinas, Recoleta y Belgrano, mientras que Villa Soldati, Constitución, Villa lugano y la Boca presentan los menores precios de propiedades. 
+En los boxplots paralelos de precios por barrios se puede ver que entre los barrios que presentan mayores precios se ubican: Puerto Madero, Recoleta, Belgrano y Villa Devoto, mientras que la Boca, Pompeya y Constitución presentan los menores precios de propiedades. 
 
-Probemos **ajustar un modelo lineal** para el precio en función de la superficie total y los barrios.  
+Probemos **ajustar un modelo lineal** para el precio en función de la superficie cubierta y los barrios.  
 
 ```{r}
 # ajustamos el modelo
@@ -293,12 +294,11 @@ R cuando efectúa la regresión calcula automáticamente las variables indicador
 
 ¿Qué significan los coeficientes de esta variable categórica?
 
-* Este modelo propone ajustar una recta distinta para el precio **medio**
-de cada población definida por el barrio, todas con igual pendiente (definida por la superficie), y 57 ordenadas al origen diferentes, una por cada barrio.
+* Este modelo propone ajustar una recta distinta para el precio **medio** de cada población definida por el barrio, todas con igual pendiente (definida por la superficie), y 55 ordenadas al origen diferentes, una por cada barrio.
 
-* Por ejemplo, eligiendo un barrio de precios altos, vemos que $\beta_{Belgrano}$ indica cuánto se incrementa el precio medio de las propiedades para aquellos inmuebles ubicados en Belgrano respecto de aquellos ubicados en Abasto (categoría basal), dada la superficie.
+* Por ejemplo, eligiendo un barrio de precios altos, vemos que $\hat{\beta_{Belgrano}}$ indica cuánto se incrementa el precio medio de las propiedades para aquellos inmuebles ubicados en Belgrano respecto de aquellos ubicados en Abasto (categoría basal), dada la superficie.
 
-* Analizando un barrio de precios bajos, $\beta_{Boca}$ indica cuánto se reduce el precio medio de las propiedades ubicadas en la Boca respecto de aquellas ubicadas en Abasto (categoría basal), dada la superficie.
+* Analizando un barrio de precios bajos, $\hat{\beta_{Boca}}$ indica cuánto se reduce el precio medio de las propiedades ubicadas en la Boca respecto de aquellas ubicadas en Abasto (categoría basal), dada la superficie.
 
 ## Inferencia de los $β_k$ (test de significatividad individual)
 
@@ -320,7 +320,7 @@ tidy_sc_r %>%
   select(term, statistic, p.value, conf.low, conf.high)
 ```
 
-* En este primer modelo se observa que tanto la variable *surface_total* como *rooms* resultan estadísticamente significativas para explicar el precio de las propiedades (p-valores < 0.05). 
+* En este primer modelo se observa que tanto la variable *surface_covered* como *rooms* resultan estadísticamente significativas para explicar el precio de las propiedades (p-valores < 0.05). 
 
 * Además del resultado del test, podemos apreciar que los intervalos de confianza (IC) del 95% de las variables de superficie y habitaciones no contienen al 0. 
 
@@ -339,7 +339,7 @@ tidy_sc_pt %>%
 
 * En el caso de la variable tipo de propiedad, este test permite chequear si los valores medios del precio son los mismos para los departamentos o PHs respecto de las casas (categoría basal).
 
-**Modelo Superficie Total y Barrios** 
+**Modelo Superficie y Barrios** 
 
 ```{r, warning=FALSE}
 tidy_sc_l3 %>%
@@ -374,14 +374,14 @@ En nuestro caso queremos testear si la variable categórica tipo de propiedad (o
 Dichos tests F se obtienen para cada variable de la tabla de ANOVA del modelo. Veamos qué ocurre en este caso. 
 
 ```{r}
-# Modelo Superficie Total y Tipo de Propiedad
+# Modelo Superficie y Tipo de Propiedad
 tidy(anova(modelo_sc_pt))
 ```
 
 La tabla de ANOVA muestra que, según el resultado del test F, la variable *property_type* en su conjunto resulta estadísticamente significativa para explicar al precio (p-valor < 0.05).
 
 ```{r}
-# Modelo Superficie Total y Barrios
+# Modelo Superficie y Barrios
 tidy(anova(modelo_sc_l3))
 ```
 
@@ -391,7 +391,7 @@ Si este test no resultara significativo, suele descartarse la variable categóri
 
 Otra alternativa sería generar una nueva variable con menor número de variables categóricas que sean significativas, sin perder capacidad explicativa. Por ejemplo, se podría armar una nueva variable que agrupe los barrios. 
 
-### Generación de nueva varible `tipo_barrio`
+### Generación de nueva variable `tipo_barrio`
 
 * Se crea una nueva variable `tipo_barrio` que clasifica a los barrios según el precio por metro cuadrado promedio de las propiedades en ellos, de acuerdo a precios altos, medios y bajos. 
 
@@ -434,7 +434,7 @@ AVG_pxm2_l3 = AVG_pxm2_l3 %>%
                                  )
          )
 write.csv(AVG_pxm2_l3, 'AVG_pxm2_l3.csv')
-# write_csv(AVG_pxm2_l3, 'AVG_pxm2_l3_.csv')
+
 # unimos esta clasificación al dataset original
 train_data = train_data %>% left_join(AVG_pxm2_l3, by = 'l3') 
 head(train_data)
@@ -465,9 +465,13 @@ regresoras. En cambio, $H_1$ dice que al menos una de las variables regresoras s
 para predecir a Y.
 
 Los resultados de este test se pueden observar haciendo un `summary()` del modelo o `glance()`. 
-
 ```{r}
 glance(modelo_sc_pt)
+```
+
+
+```{r}
 summary(modelo_sc_pt)
 ```
+
 
