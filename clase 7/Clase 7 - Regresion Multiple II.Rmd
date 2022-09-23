@@ -1,6 +1,6 @@
 ---
 title: "Regresión Lineal Múltiple II"
-author: "Juan Barriol, Azul Villanueva y Franco Mastelli"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
 date: "24 de septiembre de 2022"
 output:
   html_notebook:
@@ -93,7 +93,7 @@ Habíamos realizado cuatro modelos distintos para tratar de explicar el precio d
 
 * Modelo **Superficie y Tipo de barrio**
 
-Agregamos dos adicionales: 
+Agregamos tres adicionales: 
 
 * **Modelo varias**: Superficie cubierta, descubierta, habitaciones y tipo de propiedad. 
 
@@ -218,7 +218,7 @@ df_evaluacion_train
 Como no todos los modelos tienen igual número de variables, debemos compararlos a través del $R^2_a$, ya que sino podemos incurrir en un error. Por ejemplo, vemos que en los modelos que incluyen a l3, el $R^2$ es mayor al $R_a^2$.
 Por lo expuesto previamente esa diferencia podría estar explicada por el mayor número de dummies que contienen. A pesar de ello los mejores modelos resultan ser los que incluyen la variable barrios ya que poseen mayor $R_a^2$.
 
-Analizando el R2 ajustado, el **mejor modelo** resulta ser modelo_varias_l3: que explica el precio en función de superficie cubierta, descubierta, barrios, habitaciones y tipo de propiedad. Este modelo explica 78,20% de la variabilidad del precio, es decir, más que todos los restantes modelos. 
+Analizando el R2 ajustado, el **mejor modelo** resulta ser modelo_varias_l3 que explica el precio en función de superficie cubierta, descubierta, barrios, habitaciones y tipo de propiedad. Este modelo explica 78,20% de la variabilidad del precio, es decir, más que todos los restantes modelos. 
 
 
 ## Diagnóstico de Modelos
@@ -343,7 +343,7 @@ grid.arrange(g1, g2, g3, g4, nrow = 2)
 
 * *Residuos vs valores predichos*: Parece existir cierta estructura en los datos: la varianza parece incrementarse con los valores predichos y luego se reduce (depende de la variable), por lo que no se satisface el supuesto de homocedasticidad.
 
-* *Normal QQ plot*: El extremo superior derecho no se ajusta a la distribución teórica, por lo que no parecen seguir una distribución normal.
+* *Normal QQ plot*: El El extremo superior derecho e izquierdo inferior no se ajustan a la distribución teórica, por lo que no parecen seguir una distribución normal.
 
 * *Residual vs leverage*: Existe un punto con un leverage más alto.
 
