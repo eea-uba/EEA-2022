@@ -1,7 +1,7 @@
 ---
 title: "Regresión Lineal Múltiple II"
-author: "Juan Barriola y Sofía Perini"
-date: "16 de Octubre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "24 de septiembre de 2022"
 output:
   html_notebook:
     theme: spacelab
@@ -40,7 +40,7 @@ library(gridExtra)
 
 ```{r}
 # levantamos dataset preprocesado
-datos_properati <- read.csv("../clase 6/properati_preprocesado.csv")
+datos_properati <- read.csv("../clase 6/properati_preprocesado_2022.csv")
 # creamos nueva variable de superficie descubierta
 datos_properati = datos_properati %>%
   mutate(surface_uncovered = surface_total - surface_covered)
@@ -52,12 +52,12 @@ En este caso para evaluar los modelos vamos a realizar una partición entre data
 
 ```{r}
 # fijamos semilla
-set.seed(2021)
+set.seed(22)
 # Partición Train y Test, indicando proporción
 train_test <- initial_split(datos_properati, prop = 0.75)
 train_data <- training(train_test)
 test_data <- testing(train_test)
-# vemos las dimensiones de cada particion
+# vemos las dimensiones de cada partición
 train_data %>%
   dim_desc() 
 test_data %>%
@@ -93,7 +93,7 @@ Habíamos realizado cuatro modelos distintos para tratar de explicar el precio d
 
 * Modelo **Superficie y Tipo de barrio**
 
-Agregamos dos adicionales: 
+Agregamos tres adicionales: 
 
 * **Modelo varias**: Superficie cubierta, descubierta, habitaciones y tipo de propiedad. 
 
@@ -144,7 +144,7 @@ ggplot(tidy_sc_pt, aes(estimate, term, xmin = conf.low, xmax = conf.high, height
   theme_bw() +
   labs(y = "Coeficientes β", x = "Estimación")
 ```
-En este gráfico podemos observar los coeficientes estimados para este modelo con sus respectivos intervalos de confianza. Tanto el gráfico como la salida del modelo tidy se puede apreciar que el intervalo de confianza (IC) del 95% de las variables no contienen al 0. Es decir, que tanto la superficie cubierta como los tipos de propiedades resultan significativas para explicar el precio. 
+En este gráfico podemos observar los coeficientes estimados para este modelo con sus respectivos intervalos de confianza. Tanto en el gráfico como en la salida del modelo tidy se puede apreciar que el intervalo de confianza (IC) del 95% de las variables no contienen al 0. Es decir, que tanto la superficie cubierta como los tipos de propiedades resultan significativas para explicar el precio. 
 
 **Modelo Superficie y Barrios**
 
@@ -162,7 +162,7 @@ ggplot(tidy_sc_l3, aes(estimate, term, color=p.value < 0.05, xmin = conf.low, xm
   theme_bw() +
   labs(y = "Coeficientes β", x = "Estimación")
 ```
-En el caso de la variable barrios, este test permite chequear si los valores medios del precio son los mismos para los distintos barrios respecto del Abasto (categoría basal). En este caso se observa que los niveles medios de precio de inmuebles en los distintos barrios en algunos casos difieren de los niveles medios del Abasto (tienen p-valor > 0.05 y sus IC incluyen al 0).
+En el caso de la variable barrios, este test permite chequear si los valores medios del precio son los mismos para los distintos barrios respecto del Abasto (categoría basal). En este caso se observa que los niveles medios de precio de inmuebles en los distintos barrios en algunos casos no difieren de los niveles medios del Abasto (tienen p-valor > 0.05 y sus IC incluyen al 0).
 
 **Modelo Superficie y Tipo de barrio**
 
@@ -180,13 +180,13 @@ ggplot(tidy_sc_tb, aes(estimate, term, xmin = conf.low, xmax = conf.high, height
 ```
 ¿Cómo se interpretan estos coeficientes?
 
-Podemos calcular esta información para todos los modelos juntos, usando la función map_df de la librería purrr para poder mostrar las salidas todas en un mismo dataframe 
+Podemos calcular esta información para todos los modelos juntos, usando la función map_df de la librería purrr para poder mostrar todas las salidas en un mismo dataframe.
 
 ```{r}
 # armamos lista con todos los modelos
 models <- list(modelo_sc_r = modelo_sc_r, modelo_sc_pt = modelo_sc_pt, modelo_sc_l3 = modelo_sc_l3, modelo_sc_tb = modelo_sc_tb, modelo_varias = modelo_varias, modelo_varias_l3 = modelo_varias_l3, modelo_varias_tb = modelo_varias_tb)
 # calculamos las variables resumen
-purrr::map_df(models, broom::tidy, .id = "model")
+map_df(models, tidy, .id = "model")
 ```
 
 ### Coeficientes de determinación $R^2$ y $R^2$ ajustado
@@ -204,7 +204,7 @@ Veamos qué pasa con los ajustes que hicimos.
 
 ```{r}
 # calculamos las métricas para todos los modelos
-df_evaluacion_train = map_df(models, broom::glance, .id = "model") %>%
+df_evaluacion_train = map_df(models, glance, .id = "model") %>%
   # ordenamos por R2 ajustado
   arrange(desc(adj.r.squared))
 
@@ -215,10 +215,10 @@ df_evaluacion_train
 
 ¿Cuál es el modelo que mejor explica la variabilidad del conjunto?
 
-Como no todos los modelos tienen igual número de variables, debemos compararlos a través del $R^2_a$, ya que sino podemos incurrir en un error. Por ejemplo, vemos que en los modelos que incluyen a l3, el $R^2$ es el mayor al $R_a^2$.
+Como no todos los modelos tienen igual número de variables, debemos compararlos a través del $R^2_a$, ya que sino podemos incurrir en un error. Por ejemplo, vemos que en los modelos que incluyen a l3, el $R^2$ es mayor al $R_a^2$.
 Por lo expuesto previamente esa diferencia podría estar explicada por el mayor número de dummies que contienen. A pesar de ello los mejores modelos resultan ser los que incluyen la variable barrios ya que poseen mayor $R_a^2$.
 
-Analizando el R2 ajustado, el **mejor modelo** resulta ser modelo_varias_l3: que explica el precio en función de superficie cubierta, descubierta, barrios, habitaciones y tipo de propiedad. Este modelo explica 74,23% de la variabilidad del precio, es decir, más que todos los restantes modelos. 
+Analizando el R2 ajustado, el **mejor modelo** resulta ser modelo_varias_l3 que explica el precio en función de superficie cubierta, descubierta, barrios, habitaciones y tipo de propiedad. Este modelo explica 78,20% de la variabilidad del precio, es decir, más que todos los restantes modelos. 
 
 
 ## Diagnóstico de Modelos
@@ -241,7 +241,7 @@ plot(modelo_varias_l3)
 
 * *Normal QQ plot*: El extremo superior derecho e izquierdo inferior no se ajustan a la distribución teórica.
 
-* *Residual vs leverage*: Existen dos/tres puntos con un leverage bastante alto.
+* *Residual vs leverage*: Existen algunos puntos con un leverage bastante alto.
 
 * *Diagnóstico del modelo*: El modelo creado no cumple con los supuestos del modelo lineal. Parecen existir problemas de heterocedasticidad (varianza no constante), falta de normalidad y presencia de observaciones de alto leverage.
 
@@ -249,7 +249,7 @@ Veamos la versión tidy de estos gráficos. Para ello creamos un dataframe con l
 
 ```{r}
 # calculamos valores predichos para todos los modelos
-au_modelos = purrr::map_df(models, broom::augment, .id = "model")
+au_modelos = map_df(models, augment, .id = "model")
 # observamos lo que ocurre con las variables que no se incluyen en el modelo
 au_modelos %>%
   head(5)
@@ -296,8 +296,9 @@ También podemos identificar cuáles son los datos con alto leverage.
 
 ```{r}
 au_modelos %>% filter(model == "modelo_varias_l3") %>%
-  filter(.hat>0.3)
+  filter(.hat>0.4)
 ```
+
 
 **Diagnóstico para el Modelo Varias sin incluir barrio**
 
@@ -342,7 +343,7 @@ grid.arrange(g1, g2, g3, g4, nrow = 2)
 
 * *Residuos vs valores predichos*: Parece existir cierta estructura en los datos: la varianza parece incrementarse con los valores predichos y luego se reduce (depende de la variable), por lo que no se satisface el supuesto de homocedasticidad.
 
-* *Normal QQ plot*: El extremo superior derecho no se ajusta a la distribución teórica, por lo que no parecen seguir una distribución normal.
+* *Normal QQ plot*: El El extremo superior derecho e izquierdo inferior no se ajustan a la distribución teórica, por lo que no parecen seguir una distribución normal.
 
 * *Residual vs leverage*: Existe un punto con un leverage más alto.
 
