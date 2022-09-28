@@ -1,8 +1,11 @@
 ---
 title: "Extensiones del Modelo Regresión Lineal Múltiple"
-author: "Juan Barriola y Sofía Perini"
-date: "23 de Octubre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "01 de Octubre de 2022"
 output:
+  html_document:
+    toc: yes
+    df_print: paged
   html_notebook:
     theme: spacelab
     toc: yes
@@ -35,7 +38,7 @@ Vamos a trabajar con el subconjunto de datos que se utilizó en la clase anterio
 
 ```{r}
 # Levantamos Dataset 
-datos_properati <- read.csv("../clase 6/properati_preprocesado.csv")
+datos_properati <- read.csv("../clase 6/properati_preprocesado_2022.csv")
 ```
 
 ### Repaso Diagnóstico del Modelo Lineal previo
@@ -78,7 +81,7 @@ datos_properati = datos_properati %>%
   mutate(surface_uncovered = surface_total - surface_covered)
 # creamos variables log
 datos_properati = datos_properati %>% 
-  mutate(log.price = log(price), log.rooms = log(rooms), log.bathrooms = log(bathrooms), log.surf_cov = log(surface_covered))
+  mutate(log.price = log(price), log.rooms = log(rooms), log.bathrooms = log(bathrooms), log.surf_cov = log(surface_covered), log.surv_unc = log(surface_uncovered+1))
 head(datos_properati)
 summary(datos_properati)
 ```
@@ -88,7 +91,7 @@ En este caso para evaluar los modelos vamos a realizar una partición entre data
 
 ```{r}
 # fijamos semilla
-set.seed(2021)
+set.seed(22)
 # Partición Train y Test, indicando proporción
 train_test <- initial_split(datos_properati, prop = 0.75)
 train_data <- training(train_test)
@@ -126,7 +129,8 @@ Vamos a ajustar un modelo con las nuevas variables log.
 
 ```{r}
 # modelo log
-modelo_log <- lm(log.price ~ l3 + log.rooms + log.bathrooms + log.surf_cov + surface_uncovered + property_type, data = train_data)
+modelo_log <- lm(log.price ~ l3 + rooms + bathrooms + log.surf_cov + log.surv_unc + property_type, data = train_data)
+
 ```
 
 ```{r}
@@ -146,9 +150,9 @@ Sugerimos leer la sección del libro ["Introductory Econometrics: A Modern Appro
 
 Veamos cómo aplican estas interpretaciones en nuestro modelo log, con algunos ejemplos: 
 
-* El coeficiente de *log(surf_cov)* es la **elasticidad** estimada del precio respecto a la superficie cubierta. Es decir, que por cada aumento del 1% en la superficie cubierta hay un aumento de aproximadamente 0,78% en el **precio medio** de los inmuebles, dadas las demás covariables.
+* El coeficiente de *log.surv_cov* es la **elasticidad** estimada del precio respecto a la superficie cubierta. Es decir, que por cada aumento del 1% en la superficie cubierta hay un aumento de aproximadamente 0,98% en el **precio medio** de los inmuebles, dadas las demás covariables.
 
-* El coeficiente de *surface_uncovered* representa una **semielasticidad** del precio respecto de la superficie descubierta. Este coeficiente tiene una interpretación porcentual multiplicándolo por 100: el **precio medio** del inmueble aumenta 0,22% por cada metro cuadrado adicional de superficie descubierta, dadas las demás covariables. 
+* El coeficiente de *bathrooms* representa una **semielasticidad** del precio respecto de la cantidad de baños. Este coeficiente tiene una interpretación porcentual multiplicándolo por 100: el **precio medio** del inmueble aumenta aproximadamente 9,25% por cada baño adicional, dadas las demás covariables. 
 
 
 ### Diagnóstico del modelo log
@@ -239,7 +243,7 @@ Una comparación de $R^2$ es significativa sólo si la variable dependiente es l
 
 Para fines de la comparación, nos gustaría una medida que utilice el anti-log (función exponencial) del *log(precio)*. Para el modelo log, la forma de proceder es obtener los valores predichos del antilogaritmo y calcular el $R^2$ entre el antilogaritmo de los valores observados y predichos. Este $R^2$ sí será comparable con el obtenido a partir de la estimación MCO del modelo lineal.
 
-Para ello, se puede calcular el anti-log de los valores de *log(precios)* predichos (así obtener los precios predichos), y luego computar la función `metrics()` de la librería **yardstick** con las columnas de precios predichos y observados para que devuelva: $RMSE$, $R^2$ y $MAE$. Veamos cómo hacerlo. 
+Para ello, se puede calcular el anti-log de los valores de *log.price* predichos (así obtener los precios predichos), y luego computar la función `metrics()` de la librería **yardstick** con las columnas de precios predichos y observados para que devuelva: $RMSE$, $R^2$ y $MAE$. Veamos cómo hacerlo. 
 
 ```{r}
 # para ejecutar el anti-log usamos función exponencial
@@ -253,7 +257,7 @@ metricas2 = metrics(data = eval2, truth = price, estimate = .fitted) %>% mutate(
 metricas2
 ```
 
-* Analizando el $R^2$, se observa que este modelo explica 80,2% de la variabilidad del precio, es decir, más que el modelo sin log (74,3%). De acuerdo a la literatura, y como se pudo comprobar, el uso del logaritmo de una o más variables mejora el ajuste del modelo al transformar la distribución de las características en una curva de campana de forma más normal.
+* Analizando el $R^2$, se observa que este modelo explica 81,4% de la variabilidad del precio, es decir, más que el modelo sin log (78,2%). De acuerdo a la literatura, y como se pudo comprobar, el uso del logaritmo de una o más variables mejora el ajuste del modelo al transformar la distribución de las características en una curva de campana de forma más normal.
 
 ### Métricas en TEST
 
@@ -275,7 +279,7 @@ metricas1_test
 metricas2_test
 ```
 
-* Observamos que el modelo_log presenta menor $RMSE$ y $MAE$ y mayor $R^2$ tanto en training como en testing. Por lo que parece ser el mejor modelo para predecir el precio. 
+* Observamos que el modelo_log presenta menor  $MAE$ y $R^2$ y mayor $RMSE$ en testing. Por lo que parece ser el mejor modelo para predecir el precio. 
 
 ### Notas técnicas
 
@@ -363,9 +367,9 @@ Los coeficientes pueden ser no significativos aún cuando exista una asociación
 
 La interpretación de los coeficientes estimados sería:
 
-* $\hat{\beta_{surface\_total}}$ indica que por cada m2 adicional de superficie total el precio **esperado** aumenta en 412 dólares, dada la superficie cubierta.
+* $\hat{\beta_{surface\_total}}$ indica que por cada m2 adicional de superficie total el precio **esperado** aumenta en 337 dólares, dada la superficie cubierta.
 
-* $\hat{\beta_{surface\_covered}}$ indica que por cada m2 adicional de superficie cubierta el precio **esperado** aumenta en 2.516 dólares, dada la superficie total.
+* $\hat{\beta_{surface\_covered}}$ indica que por cada m2 adicional de superficie cubierta el precio **esperado** aumenta en 2.541 dólares, dada la superficie total.
 
 Respecto a la segunda interpretación alguien podría objetar lo siguiente:
 
@@ -399,9 +403,9 @@ tidy(lm(price ~ surface_covered + surface_uncovered, data = train_data))
 
 La interpretación de los coeficientes estimados es:
 
-* $\hat{\beta_{suface\_covered}}$ indica que por cada m2 adicional de superficie cubierta el precio **esperado** de las propiedades aumenta en 2.929 dólares, dada la superficie descubierta.
+* $\hat{\beta_{suface\_covered}}$ indica que por cada m2 adicional de superficie cubierta el precio **esperado** de las propiedades aumenta en 2.878 dólares, dada la superficie descubierta.
 
-* $\hat{\beta_{suface\_uncovered}}$ indica que por cada m2 adicional de superficie descubierta el precio **esperado** aumenta 412 dólares, dada la superficie cubierta.
+* $\hat{\beta_{suface\_uncovered}}$ indica que por cada m2 adicional de superficie descubierta el precio **esperado** aumenta 337 dólares, dada la superficie cubierta.
 
 En este caso la regresión ayuda a entender cómo afecta la superficie cubierta y descubierta al precio del inmueble. Es decir, cuánto aumenta el precio **medio** un m2 adicional de superficie cubierta, dada la superficie descubierta, y cuánto aumenta el precio promedio un m2 adicional de superficie descubierta, dada la superficie cubierta. 
 
