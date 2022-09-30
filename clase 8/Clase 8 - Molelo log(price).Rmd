@@ -66,7 +66,7 @@ La forma más común de mejorar un modelo es transformar una o más variables, g
 Entonces, nuestro objetivo será ajustar e interpretar un modelo de regresión lineal múltiple que buscan explicar el precio de venta en dólares de dichas propiedades pero distinto a los que vimos hasta ahora:
 
 $$
-E(log(price)) = \beta_0 + \beta_{r}log(rooms) + \beta_{b}log(bathrooms) + \beta_{sc}log(surface\_covered) + \beta_{pt}property\_type + \beta_{l3}l3 + \beta_{su}surface\_uncovered
+E(\log(price)) = \beta_0 + \beta_{r}rooms + \beta_{b}bathrooms + \beta_{sc}\log(surface\_covered) + \beta_{pt}property\_type + \beta_{l3}l3 + \beta_{su}\log(surface\_uncovered)
 $$
 
 ### Creamos nuevas variables 
@@ -279,7 +279,7 @@ metricas1_test
 metricas2_test
 ```
 
-* Observamos que el modelo_log presenta menor  $MAE$ y $R^2$ y mayor $RMSE$ en testing. Por lo que parece ser el mejor modelo para predecir el precio. 
+* Observamos que el modelo_log presenta menor  $MAE$ y $RMSE$ y mayor $R^2$ en testing. Por lo que parece ser el mejor modelo para predecir el precio. 
 
 ### Notas técnicas
 
@@ -287,7 +287,7 @@ metricas2_test
  
 Para entender cómo surge la interpretación de un coeficiente en un modelo log-log como la **elasticidad** podemos partir de la siguiente formulación:
 
-$$ ln(Y) = \beta_0 + \beta_1X_1 +\beta_2ln(X_2)$$
+$$ \ln(Y) = \beta_0 + \beta_1X_1 +\beta_2\ln(X_2)$$
 Tomamos la derivada parcial respecto $X_2$ y nos queda:
  
 $$\frac{1}{Y} \frac{\delta Y}{\delta X_2} = \beta_2 \frac{1}{X_2} $$
@@ -297,9 +297,9 @@ El término izquierdo es la elasticidad de $Y$ respecto a $X_2$, con lo cual $\b
  
 #### Caso de interacción entre una variable log y otra sin transformación
  
-Ahora si aplicamos el mismo procedimiento para un modelo en el cual realizamos la interacción entre $X_1$ y $ln(X_2)$:
+Ahora si aplicamos el mismo procedimiento para un modelo en el cual realizamos la interacción entre $X_1$ y $\ln(X_2)$:
 
-$$ln(Y) = \beta_0 + \beta_1X_1 +\beta_2ln(X_2) + \beta_3X_1.ln(X_2) $$
+$$\ln(Y) = \beta_0 + \beta_1X_1 +\beta_2\ln(X_2) + \beta_3X_1.\ln(X_2) $$
  
 Tomando la derivada parcial respecto de $X_2$:
 
@@ -381,7 +381,7 @@ Entonces, si aumento en un m2 la superficie cubierta no puedo sostener que varia
 
 El coeficiente de $\hat{\beta_{surface\_total}}$ en realidad nos permite evaluar cuál es el efecto en el precio esperado de un m2 más de superficie descubierta para igual cantidad de m2 de superficie cubierta. Es decir, lo que cambia es la interpretación en este caso de dicho coeficiente.
 
-Por ejemplo, si existen dos propiedades de 50 m2 de superficie total y la propiedad A tiene 5 m2 de superficie descubierta y la propiedad B 4 m2, nuestro modelo nos indica que el precio predicho para la propiedad B va a ser 412 dólares menor al precio de la propiedad A.
+Por ejemplo, si existen dos propiedades de 50 m2 de superficie total y la propiedad A tiene 5 m2 de superficie descubierta y la propiedad B 4 m2, nuestro modelo nos indica que el precio predicho para la propiedad B va a ser 337 dólares menor al precio de la propiedad A.
 
 **Modelo superficies cubierta y descubierta**
 
