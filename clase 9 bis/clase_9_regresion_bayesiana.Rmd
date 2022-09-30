@@ -1,0 +1,99 @@
+---
+title: "Regresión Bayesiana"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "15 de Octubre de 2022"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+---
+
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+#### Levantamos Dataset 
+
+
+
+```{r, message=FALSE}
+# Carga de librerías
+library(tidyverse)
+library(tidymodels)
+library(rvest)
+library(GGally)
+```
+```{r}
+salarios_nba = read_html("https://www.basketball-reference.com/contracts/players.html") %>%
+  html_elements("table") %>%
+  html_table()
+salarios_nba = salarios_nba[[1]]
+estadisticas = read_html("https://www.basketball-reference.com/leagues/NBA_2022_per_game.html") %>%
+  html_elements("table") %>%
+  html_table()
+estadisticas = estadisticas[[1]]
+
+```
+
+
+```{r}
+names(salarios_nba) <- as.character(unlist(salarios_nba[1,]))
+salarios_nba = salarios_nba %>%
+              filter(Player!="",Player!="Player") %>% 
+              transmute(jugador=Player,
+                        equipo=Tm,
+                        salario=str_remove_all(`2022-23`, '\\$|,') %>% as.numeric())
+
+jugadores_intercambiados = estadisticas %>% group_by(Player) %>% count() %>% filter(n>1) %>% select(Player) %>% distinct()
+
+estadisticas = estadisticas %>% 
+                filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
+                         !(Player %in% jugadores_intercambiados$Player)) %>% 
+                rename(jugador=Player) %>% 
+                mutate(across(-c(jugador,Pos, Tm),  ~as.numeric(.)))
+```
+
+```{r}
+tabla_exploratorios =  estadisticas %>%
+                                      gather(., 
+                                            key = "variables", 
+                                            value = "valores") %>% # agrupamos por las variables del set
+                                      group_by(variables) %>% 
+                                      summarise(valores_unicos = n_distinct(valores),
+                                      porcentaje_faltantes = sum(is.na(valores))/nrow(estadisticas)*100) %>% 
+                                      arrange(desc(porcentaje_faltantes), valores_unicos)
+```
+
+
+```{r}
+nba_salarios_estadisticas = salarios_nba %>% 
+                              inner_join(y=estadisticas, on=jugador)
+```
+```{r}
+nba_salarios_estadisticas %>% 
+  select_if(is.numeric) %>% # selección variables numéricas
+  ggcorr(., layout.exp = 5, hjust = 1, size = 3.5, nbreaks = 5, color = "grey50") + # graficamos correlacion pearson
+  labs(title='Correlograma de variables cuantitativas')
+```
+
+```{r}
+nba_salarios_estadisticas %>% 
+  select(salario, Age, PTS, GS, DRB, TRB, AST, BLK) %>% 
+  ggpairs(upper = list(continuous = wrap("cor", size = 3, hjust=0.5)), progress=FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") + 
+  theme_bw()
+```
+```{r}
+ggplot(data = nba_salarios_estadisticas, aes(x=PTS, y=salario)) +
+  geom_point()
+```
+```{r}
+summary(lm(salario ~ PTS + GS + Age + DRB + AST , data = nba_salarios_estadisticas))
+```
+
