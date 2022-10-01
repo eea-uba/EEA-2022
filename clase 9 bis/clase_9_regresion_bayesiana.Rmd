@@ -56,7 +56,7 @@ estadisticas = estadisticas %>%
                 filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
                          !(Player %in% jugadores_intercambiados$Player)) %>% 
                 rename(jugador=Player) %>% 
-                mutate(across(-c(jugador,Pos, Tm),  ~as.numeric(.)))
+                mutate(across(-c(jugador,Pos, Tm),  ~replace_na(as.numeric(.x), 0))) 
 ```
 
 ```{r}
@@ -73,7 +73,8 @@ tabla_exploratorios =  estadisticas %>%
 
 ```{r}
 nba_salarios_estadisticas = salarios_nba %>% 
-                              inner_join(y=estadisticas, on=jugador)
+                            inner_join(y=estadisticas, on=jugador) %>% 
+                            drop_na()
 ```
 ```{r}
 nba_salarios_estadisticas %>% 
@@ -89,6 +90,12 @@ nba_salarios_estadisticas %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") + 
   theme_bw()
 ```
+```{r}
+ggplot(data = nba_salarios_estadisticas, aes(x=salario)) +
+  geom_histogram()
+```
+
+
 ```{r}
 ggplot(data = nba_salarios_estadisticas, aes(x=PTS, y=salario)) +
   geom_point()
