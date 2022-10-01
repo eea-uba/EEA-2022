@@ -1,0 +1,110 @@
+---
+title: "Construccion datasets de NBA"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "15 de Octubre de 2022"
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(tidyverse)
+library(tidymodels)
+library(rvest)
+
+# Funcion eliminar columnas de NAs
+not_any_na <- function(x) all(!is.na(x))
+```
+
+Utilizando la función `read_html()` de la librería **rvest** accedemos a la información de los salarios de la temporada 2022-23 de la NBA y a las estadísticas básicas y avanzadas de la temporada 2021-2022.
+
+```{r}
+# Información de salarios
+salarios_nba = read_html("https://www.basketball-reference.com/contracts/players.html") %>%
+  html_elements("table") %>%
+  html_table()
+salarios_nba = salarios_nba[[1]]
+
+# Información de estadísticas básicas por juego
+estadisticas = read_html("https://www.basketball-reference.com/leagues/NBA_2022_totals.html") %>%
+  html_elements("table") %>%
+  html_table()
+estadisticas = estadisticas[[1]]
+
+# Información de estadísticas básicas por juego
+estadisticas_por_partido = read_html("https://www.basketball-reference.com/leagues/NBA_2022_per_game.html") %>%
+  html_elements("table") %>%
+  html_table()
+estadisticas_por_partido = estadisticas_por_partido[[1]]
+
+# Información estadísticas avanzadas
+estadisticas_avanzadas = read_html("https://www.basketball-reference.com/leagues/NBA_2022_advanced.html") %>%
+  html_elements("table") %>%
+  html_table()
+estadisticas_avanzadas = estadisticas_avanzadas[[1]] %>%
+  select(where(not_any_na))
+```
+
+Se realiza una serie de procedimientos de limpieza sobre los datos
+
+```{r}
+# Asignar la primera fila como nombre de columnas
+names(salarios_nba) <- as.character(unlist(salarios_nba[1,]))
+# Limpieza salarios
+salarios_nba = salarios_nba %>%
+              filter(Player!="",Player!="Player") %>% # Eliminar filas con nombres de columna
+              transmute(jugador=Player,
+                        equipo=Tm,
+                        salario=str_remove_all(`2022-23`, '\\$|,') %>% as.numeric()) # Conservar y limpiar el salario de la temporada actual
+
+# Seleccionar jugadores que pertenecieron a mas de un equipo (deberian ser los mismos)
+jugadores_intercambiados = estadisticas %>% group_by(Player) %>% count() %>%
+                                filter(n>1) %>% select(Player) %>% distinct()
+
+#Limpieza estadisticas por partido
+estadisticas = estadisticas %>% 
+                    # Conservar los datos completos de los jugadores
+                    filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
+                             !(Player %in% jugadores_intercambiados$Player)) %>% 
+                    rename(jugador=Player) %>%
+                    # Convertir las variables a numéricas y reemplazar faltantes por cero
+                    mutate(across(-c(jugador,Pos, Tm),  ~replace_na(as.numeric(.x), 0))) %>% 
+                    select(-c(Rk))
+
+# Seleccionar jugadores que pertenecieron a mas de un equipo (deberian ser los mismos)
+jugadores_intercambiados = estadisticas_por_partido %>% group_by(Player) %>% count() %>%
+                                filter(n>1) %>% select(Player) %>% distinct()
+
+#Limpieza estadisticas por partido
+estadisticas_por_partido = estadisticas_por_partido %>% 
+                            # Conservar los datos completos de los jugadores
+                            filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
+                                     !(Player %in% jugadores_intercambiados$Player)) %>% 
+                            rename(jugador=Player) %>%
+                            # Convertir las variables a numéricas y reemplazar faltantes por cero
+                            mutate(across(-c(jugador,Pos, Tm),  ~replace_na(as.numeric(.x), 0))) %>% 
+                            select(-c(Rk))
+
+# Seleccionar jugadores que pertenecieron a mas de un equipo (deberian ser los mismos)
+jugadores_intercambiados_av = estadisticas_avanzadas %>% group_by(Player) %>% count() %>%
+                                filter(n>1) %>% select(Player) %>% distinct()
+
+#Limpieza estadisticas avanzadas
+estadisticas_avanzadas = estadisticas_avanzadas %>% 
+                # Conservar los datos completos de los jugadores
+                filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
+                         !(Player %in% jugadores_intercambiados$Player)) %>% 
+                rename(jugador=Player) %>%
+                # Convertir las variables a numéricas y reemplazar faltantes por cero
+                mutate(across(-c(jugador,Pos, Tm),  ~replace_na(as.numeric(.x), 0))) %>% 
+                select(-c(Rk))
+
+
+```
+
+Escritura de los datasets
+
+```{r}
+salarios_nba %>% write_csv(file = "../Fuentes/nba/salarios_nba_2023.csv",append = FALSE)
+estadisticas %>% write_csv(file = "../Fuentes/nba/estadisticas_2022.csv",append = FALSE)
+estadisticas_por_partido %>% write_csv(file = "../Fuentes/nba/estadisticas_por_partido_nba_2022.csv",append = FALSE)
+estadisticas_avanzadas %>% write_csv(file = "../Fuentes/nba/estadisticas_avanzadas_nba_2022.csv",append = FALSE)
+```
