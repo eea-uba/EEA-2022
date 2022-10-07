@@ -18,89 +18,93 @@ div.main-container {
 </style>
 
 
-#### Levantamos Dataset 
-
+# Datasets 
 
 
 ```{r, message=FALSE}
 # Carga de librerías
 library(tidyverse)
 library(tidymodels)
-library(rvest)
+library(brms)
 library(GGally)
 ```
-```{r}
-salarios_nba = read_html("https://www.basketball-reference.com/contracts/players.html") %>%
-  html_elements("table") %>%
-  html_table()
-salarios_nba = salarios_nba[[1]]
-estadisticas = read_html("https://www.basketball-reference.com/leagues/NBA_2022_per_game.html") %>%
-  html_elements("table") %>%
-  html_table()
-estadisticas = estadisticas[[1]]
-
-```
-
 
 ```{r}
-names(salarios_nba) <- as.character(unlist(salarios_nba[1,]))
-salarios_nba = salarios_nba %>%
-              filter(Player!="",Player!="Player") %>% 
-              transmute(jugador=Player,
-                        equipo=Tm,
-                        salario=str_remove_all(`2022-23`, '\\$|,') %>% as.numeric())
+salarios_nba = read_csv("salarios_nba_2023.csv") 
+estadisticas_por_partido_nba = read_csv("estadisticas_por_partido_nba_2022.csv")
 
-jugadores_intercambiados = estadisticas %>% group_by(Player) %>% count() %>% filter(n>1) %>% select(Player) %>% distinct()
-
-estadisticas = estadisticas %>% 
-                filter((Player %in% jugadores_intercambiados$Player & Tm == "TOT")|
-                         !(Player %in% jugadores_intercambiados$Player)) %>% 
-                rename(jugador=Player) %>% 
-                mutate(across(-c(jugador,Pos, Tm),  ~replace_na(as.numeric(.x), 0))) 
-```
-
-```{r}
-tabla_exploratorios =  estadisticas %>%
-                                      gather(., 
-                                            key = "variables", 
-                                            value = "valores") %>% # agrupamos por las variables del set
-                                      group_by(variables) %>% 
-                                      summarise(valores_unicos = n_distinct(valores),
-                                      porcentaje_faltantes = sum(is.na(valores))/nrow(estadisticas)*100) %>% 
-                                      arrange(desc(porcentaje_faltantes), valores_unicos)
-```
-
-
-```{r}
-nba_salarios_estadisticas = salarios_nba %>% 
-                            inner_join(y=estadisticas, on=jugador) %>% 
+nba_salarios_estadisticas_partido = salarios_nba %>% 
+                            inner_join(y=estadisticas_por_partido_nba, on=jugador) %>% 
                             drop_na()
+
 ```
-```{r}
-nba_salarios_estadisticas %>% 
-  select_if(is.numeric) %>% # selección variables numéricas
-  ggcorr(., layout.exp = 5, hjust = 1, size = 3.5, nbreaks = 5, color = "grey50") + # graficamos correlacion pearson
-  labs(title='Correlograma de variables cuantitativas')
-```
+# Analisis exploratorios
 
 ```{r}
-nba_salarios_estadisticas %>% 
+nba_salarios_estadisticas_partido %>% 
   select(salario, Age, PTS, GS, DRB, TRB, AST, BLK) %>% 
   ggpairs(upper = list(continuous = wrap("cor", size = 3, hjust=0.5)), progress=FALSE) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") + 
   theme_bw()
 ```
-```{r}
-ggplot(data = nba_salarios_estadisticas, aes(x=salario)) +
-  geom_histogram()
-```
+
+# Modelo lineal clásico
 
 
 ```{r}
-ggplot(data = nba_salarios_estadisticas, aes(x=PTS, y=salario)) +
-  geom_point()
+modelo_simple_puntos = lm(data = nba_salarios_estadisticas_partido, formula = salario ~ PTS)
+```
+
+```{r}
+tidy(modelo_simple_puntos)
 ```
 ```{r}
-summary(lm(salario ~ PTS + GS + Age + DRB + AST , data = nba_salarios_estadisticas))
+glance(modelo_simple_puntos)
 ```
+# Modelo Bayesiano
+
+https://michael-franke.github.io/intro-data-analysis/simple-linear-regression-with-brms.html
+
+```{r}
+fit_salario<- brm(
+  # specify what to explain in terms of what
+  #  using the formula syntax
+  formula = salario ~ PTS,
+  # which data to use
+  data = nba_salarios_estadisticas_partido
+)
+```
+```{r}
+summary(fit_salario)
+```
+
+```{r}
+
+lista_stan = list(n = nrow(estadisticas_por_partido_nba),
+                  p = 2,
+                  y = nba_salarios_estadisticas_partido$salario,
+                  x = nba_salarios_estadisticas_partido$PTS)
+```
+
+
+https://paul-buerkner.github.io/brms/
+https://github.com/rmcelreath/rethinking
+
+Compile the stan model
+
+```{r}
+li
+modelo<-stan_model("regresion_simple_puntos.stan")
+class(modelo)
+#modelo
+archivo<-"Bayesian Statistic with Rstan Weight at Birth.stan"
+stan_code <- readChar(archivo, file.info(archivo)$size)
+```
+
+Run the model
+
+```{r}
+options(nC.cores=4)
+ajuste<-stan(model_code = stan_code, data = dat,
+                chains = 3, iter = 4000, warmup = 1000, thin = 1)
 
