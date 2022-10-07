@@ -18,9 +18,6 @@ div.main-container {
 </style>
 
 
-# Datasets 
-
-
 ```{r, message=FALSE}
 # Carga de librerías
 library(tidyverse)
@@ -29,10 +26,16 @@ library(brms)
 library(GGally)
 ```
 
-```{r}
-salarios_nba = read_csv("salarios_nba_2023.csv") 
-estadisticas_por_partido_nba = read_csv("estadisticas_por_partido_nba_2022.csv")
+# Datasets 
 
+Trabajaremos con los datasets de salarios de la temporada 2022-2023 de la NBA y las estadísticas por partido de la temporada 2021-2022. La construcción estos datasets se encuentran en 
+
+```{r}
+# Salarios 2022-2023
+salarios_nba = read_csv("../Fuentes/nba/salarios_nba_2023.csv")
+# Estadísticas por partido 2021-2022
+estadisticas_por_partido_nba = read_csv("../Fuentes/nba/estadisticas_por_partido_nba_2022.csv")
+# Realizamos un join entre ambas tablas mediante el nombre
 nba_salarios_estadisticas_partido = salarios_nba %>% 
                             inner_join(y=estadisticas_por_partido_nba, on=jugador) %>% 
                             drop_na()
@@ -50,61 +53,215 @@ nba_salarios_estadisticas_partido %>%
 
 # Modelo lineal clásico
 
+Realicemos un modelo de regresión simple para predecir el salario en función de los puntos por partido:
+
+$Salario = \beta_0 + \beta_1 Puntos + \varepsilon$
+
+Recordemos que el enfoque clásico postula parámetros fijos y desconocidos y un target aleatorio
+
+$Y \sim N(\beta_0+\beta_1X, \sigma)$
+
+Siendo $\beta_0, \beta_1, \sigma$ los parámetros fijos y desconocidos que debemos estimar.
+
 
 ```{r}
+# Fiteamos el modelo
 modelo_simple_puntos = lm(data = nba_salarios_estadisticas_partido, formula = salario ~ PTS)
 ```
 
+Observamos los valores de los coeficientes estimados junto con el p-valor del test de significatividad individual y los límites de los intervalos de confianza al 95%
+
 ```{r}
-tidy(modelo_simple_puntos)
+# Observamos los valores de los coeficientes estimados
+tidy(modelo_simple_puntos, conf.int = TRUE)
 ```
+Observamos los valores de sigma y el p-valor del test de significatividad global
+
 ```{r}
+# Observamos los valores de la evaluación global
 glance(modelo_simple_puntos)
 ```
 # Modelo Bayesiano
 
-https://michael-franke.github.io/intro-data-analysis/simple-linear-regression-with-brms.html
+Recordemos que el enfoque bayesiano postula parámetros aleatorios
+
+Vamos a utilizar la implementación de modelos bayesianos de la librería **brms**
+
+La función que vamos a utilizar es `brm()` la cual permite construir una gran variedad de modelos bayesianos. Algunos de sus parámetros más relevantes son: 
+
+**Modelo**
+
+* `formula`: la fórmula del modelo que queremos realizar
+
+* `data`: dataset a utilizar
+
+* `family`: distribución de la variable respuesta/target y función link. Por default se aplica la distribución gaussiana/normal
+
+* `prior`: distribuciones prior de los parámetros
+
+**Simulación**
+
+* `init`: valores iniciales para el muestreo de los parámetros. Por default es random
+
+* `chains`: cantidad de cadenas de Markov. Por default son 4
+
+* `iter`: cantidad de iteraciones totales por cadena incluyendo warmup. Por default son 2000
+
+* `warmup`: cantidad de iteraciones de warmup. Por default es iter/2
+
+**Ejecución**
+
+* `cores`: cantidad de núcleos a utilizar en la ejecución de las cadenas de manera paralelizada. Por default es 1.
+
+* `seed`: semilla para reproducibilidad
+
+Realicemos un primer modelo con la configuración default
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_default <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  cores = 6,
+  seed = 1992
+)
+```
+Observemos los resultados del modelo
 
 ```{r}
-fit_salario<- brm(
-  # specify what to explain in terms of what
-  #  using the formula syntax
+summary(regresion_bayesiana_default)
+```
+# Tidybayes
+
+```{r}
+library(tidybayes)
+```
+```{r}
+get_variables(regresion_bayesiana_default)
+```
+
+
+```{r}
+regresion_bayesiana_default %>%
+  spread_draws(b_Intercept, b_PTS, sigma)
+```
+
+```{r}
+regresion_bayesiana_default %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  mean_qi()
+```
+
+
+
+```{r}
+regresion_bayesiana_default %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+
+
+```{r}
+regresion_bayesiana_default %>% 
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  ggplot(aes(x=.iteration, y=.value, color=factor(.chain))) +
+  geom_point() +
+  facet_wrap(facets = ~.variable, ncol=1,scales = 'free') +
+  scale_color_discrete() +
+  theme_bw()
+
+```
+
+
+```{r}
+plot(conditional_effects(regresion_bayesiana_default), ask = FALSE)
+```
+
+
+# Experimentos
+
+## Sin warm-up
+
+¿Qué pasa con nuestro modelo si no realizamos warmup?
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_no_warmup <- brm(
   formula = salario ~ PTS,
-  # which data to use
-  data = nba_salarios_estadisticas_partido
+  data = nba_salarios_estadisticas_partido,
+  warmup = 0,
+  cores = 6,
+  seed = 1992
 )
 ```
 ```{r}
-summary(fit_salario)
+summary(regresion_bayesiana_no_warmup)
+```
+```{r}
+plot(regresion_bayesiana_no_warmup, ask = FALSE)
+```
+
+## Poco warm-up
+
+¿Qué pasa con nuestro modelo si realizamos un warmup pequeño?
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_poco_warmup <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  warmup = 200,
+  cores = 6,
+  seed = 1992
+)
+```
+```{r}
+summary(regresion_bayesiana_poco_warmup)
+```
+```{r}
+plot(regresion_bayesiana_poco_warmup, ask = FALSE)
+```
+
+## Una sola cadena
+
+¿Qué pasa con nuestro modelo si realizamos un warmup pequeño?
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_unica_cadena <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  chains = 1,
+  cores = 6,
+  seed = 1992
+)
 ```
 
 ```{r}
-
-lista_stan = list(n = nrow(estadisticas_por_partido_nba),
-                  p = 2,
-                  y = nba_salarios_estadisticas_partido$salario,
-                  x = nba_salarios_estadisticas_partido$PTS)
+summary(regresion_bayesiana_unica_cadena)
+```
+```{r}
+plot(regresion_bayesiana_unica_cadena, ask = FALSE)
 ```
 
+## Pocas iteraciones
 
-https://paul-buerkner.github.io/brms/
-https://github.com/rmcelreath/rethinking
+¿Qué pasa con nuestro modelo si realizamos un pocas iteraciones pequeño?
 
-Compile the stan model
-
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_pocas_iteraciones <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  iter = 400,
+  cores = 6,
+  seed = 1992
+)
+```
 ```{r}
-li
-modelo<-stan_model("regresion_simple_puntos.stan")
-class(modelo)
-#modelo
-archivo<-"Bayesian Statistic with Rstan Weight at Birth.stan"
-stan_code <- readChar(archivo, file.info(archivo)$size)
+summary(regresion_bayesiana_pocas_iteraciones)
 ```
 
-Run the model
+https://cran.r-project.org/web/packages/tidybayes/vignettes/tidy-brms.html
 
-```{r}
-options(nC.cores=4)
-ajuste<-stan(model_code = stan_code, data = dat,
-                chains = 3, iter = 4000, warmup = 1000, thin = 1)
+https://www.r-bloggers.com/2019/11/creating-and-using-a-simple-bayesian-linear-model-in-brms-and-r/
 
+https://michael-franke.github.io/intro-data-analysis/extracting-posterior-samples.html
+
+http://mjskay.github.io/tidybayes/articles/tidy-brms.html
