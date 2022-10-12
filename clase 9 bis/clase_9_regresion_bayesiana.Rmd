@@ -59,7 +59,7 @@ Como se mencionó previamente, nuestro interés está en explicar la variable de
 
 * PTS: puntos por partido en la temporada 2021-22
 * Age: edad en años del jugador en la temporada 2021-22
-* TRB: rebotes totales (ofensivos y defensivos) por partidoen la temporada 2021-22
+* TRB: rebotes totales (ofensivos y defensivos) por partido en la temporada 2021-22
 
 Realizamos primero un correlagrama entre las 4 variables numéricas
 
@@ -88,17 +88,19 @@ ggplot(data = nba_salarios_estadisticas_partido, aes(x=Pos, y=salario, fill=Pos)
 
 # Modelo lineal clásico
 
+Recordemos que el enfoque clásico postula parámetros fijos y desconocidos y un target aleatorio
+
+$Y \sim N(\beta_0+\sum\limits_{i=1}^p{\beta_iX_i} , \sigma)$
+
+Siendo $\beta_0, \beta_1,..., \beta_p,  \sigma$ los parámetros fijos y desconocidos que debemos estimar.
+
 ## Modelo simple
 
 Realicemos un modelo de regresión simple para predecir el salario en función de los puntos por partido:
 
 $Salario = \beta_0 + \beta_1 Puntos + \varepsilon$
 
-Recordemos que el enfoque clásico postula parámetros fijos y desconocidos y un target aleatorio
-
-$Y \sim N(\beta_0+\beta_1X, \sigma)$
-
-Siendo $\beta_0, \beta_1, \sigma$ los parámetros fijos y desconocidos que debemos estimar.
+En este caso vamos a estimar tres parámetros
 
 ```{r}
 # Fiteamos el modelo
@@ -109,8 +111,14 @@ Observamos los valores de los coeficientes estimados junto con el p-valor del te
 
 ```{r}
 # Observamos los valores de los coeficientes estimados
-tidy(modelo_clasico_puntos, conf.int = TRUE)
+coef_modelo_clasico_puntos = tidy(modelo_clasico_puntos, conf.int = TRUE)
+coef_modelo_clasico_puntos
 ```
+
+El valor de $\hat{\beta_1}$ indica que por cada punto por partido adicional el salario esperado aumenta en `r modelo_clasico_puntos$coefficients[2]` dólares.
+
+El límite inferior del intervalo es `r coef_modelo_clasico_puntos %>% filter(term=='PTS') %>% select(conf.low) %>% as.numeric()` y el superior `r coef_modelo_clasico_puntos %>% filter(term=='PTS') %>% select(conf.high) %>% as.numeric()`
+
 Observamos los valores de sigma y el p-valor del test de significatividad global
 
 ```{r}
@@ -118,6 +126,12 @@ Observamos los valores de sigma y el p-valor del test de significatividad global
 glance(modelo_clasico_puntos)
 ```
 ## Modelo múltiple
+
+Realicemos un modelo de regresión múltiple para predecir el salario en función de los puntos por partido, edad y rebotes totales por partido:
+
+$Salario = \beta_0 + \beta_1 Puntos + \beta_2 Edad + \beta_3 RebotesTotales+ \varepsilon$
+
+En este caso vamos a estimar cinco parámetros
 
 ```{r}
 # Fiteamos el modelo
@@ -137,31 +151,23 @@ Observamos los valores de sigma y el p-valor del test de significatividad global
 # Observamos los valores de la evaluación global
 glance(modelo_clasico_multiple)
 ```
-## Modelo categóricas
+# Modelo Bayesiano
 
-```{r}
-# Fiteamos el modelo
-modelo_clasico_categoricas = lm(data = nba_salarios_estadisticas_partido, formula = salario ~ PTS + Pos)
-```
+Recordemos que el enfoque bayesiano postula parámetros aleatorios para el mismo modelo:
 
-Observamos los valores de los coeficientes estimados junto con el p-valor del test de significatividad individual y los límites de los intervalos de confianza al 95%
+$Y \sim N(\beta_0+\sum\limits_{i=1}^p{\beta_iX_i} , \sigma)$
 
-```{r}
-# Observamos los valores de los coeficientes estimados
-tidy(modelo_clasico_categoricas, conf.int = TRUE)
-```
-Observamos los valores de sigma y el p-valor del test de significatividad global
+Donde:
 
-```{r}
-# Observamos los valores de la evaluación global
-glance(modelo_clasico_categoricas)
-```
+$\beta_0 \sim N(0,\tau_{\beta_0})$
+$\beta_i \sim N(0,\tau_{\beta_i})$ para i entre 1 y p
+$\sigma \sim Exp(\lambda)$
 
-# Modelos Bayesianos
+Siendo $\tau_{\beta_0}, \tau_{\beta_i}, \lambda$ fijos y propuestos por nosotros
 
-Recordemos que el enfoque bayesiano postula parámetros aleatorios
+## Paquete brms
 
-Vamos a utilizar la implementación de modelos bayesianos de la librería **brms**
+Vamos a utilizar la implementación de modelos bayesianos de la librería **brms** (Bayesian Regression Models using Stan). El paper de esta librería se puede encontrar [aquí](https://cran.r-project.org/web/packages/brms/vignettes/brms_overview.pdf)
 
 La función que vamos a utilizar es `brm()` la cual permite construir una gran variedad de modelos bayesianos. Algunos de sus parámetros más relevantes son: 
 
@@ -193,7 +199,9 @@ La función que vamos a utilizar es `brm()` la cual permite construir una gran v
 
 ## Modelo simple
 
-Realicemos un primer modelo con la configuración default
+Realicemos el mismo modelo simple con la configuración default de brms:
+
+$Salario \sim N(\beta_0+\beta_1Puntos, \sigma)$
 
 ```{r, echo=TRUE, results='hide'}
 regresion_bayesiana_simple <- brm(
@@ -203,17 +211,33 @@ regresion_bayesiana_simple <- brm(
   seed = 1992
 )
 ```
-Observemos los resultados del modelo
+Observemos un resumen del modelo usando la función `summary`
 
 ```{r}
+# Vemos el resumen del modelo
 summary(regresion_bayesiana_simple)
 ```
+Lo primero que se observa es la configuración del modelo:
+
+* La **familia** es gaussiana y las **funciones de link** para los parámetros $\mu$ y $\sigma$ son la función identidad
+
+* La fórmula y dataset que definimos
+
+* La configuración para el muestreo (draws) para el proceso de MCMC:
+  
+  * Hay 4 **cadenas**
+  * Son 2000 **iteraciones** de las cuales 1000 son de **warmup** (por cadena)
+  * En total son 4 cadenas cada una con 2000 iteraciones en total, dando un total de 8000 iteraciones. Como la mitad son iteraciones de warmup el **total de muestreos (draws) post warmup** es 4000. 
+
+Luego podemos ver información de los parámetros de la población y de los parámetros especificos de la familia
+
 ```{r}
 regresion_bayesiana_simple$fit
 ```
+Con el comando `plot` podemos observar la distribución a posteriori y el proceso de muestreo de las cadenas de cada parámetro. 
 
 ```{r}
-plot(regresion_bayesiana_simple, ask = FALSE)
+plot(regresion_bayesiana_simple)
 ```
 
 ## Tidybayes
