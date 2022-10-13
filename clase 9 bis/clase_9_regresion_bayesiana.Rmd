@@ -78,14 +78,6 @@ Observamos:
 
 * Las tres variables presentan una correlación positiva con el salario. Los puntos por partido presentan una correlación fuerte (0.798) mientras que los rebotes totales por partido y la edad presentan valores de correlación más moderados
 
-
-```{r}
-ggplot(data = nba_salarios_estadisticas_partido, aes(x=Pos, y=salario, fill=Pos)) +
-  geom_boxplot() +
-  theme_bw()
-```
-
-
 # Modelo lineal clásico
 
 Recordemos que el enfoque clásico postula parámetros fijos y desconocidos y un target aleatorio
@@ -111,13 +103,13 @@ Observamos los valores de los coeficientes estimados junto con el p-valor del te
 
 ```{r}
 # Observamos los valores de los coeficientes estimados
-coef_modelo_clasico_puntos = tidy(modelo_clasico_puntos, conf.int = TRUE)
+coef_modelo_clasico_puntos = tidy(modelo_clasico_puntos, conf.int = TRUE, conf.level = 0.95)
 coef_modelo_clasico_puntos
 ```
 
-El valor de $\hat{\beta_1}$ indica que por cada punto por partido adicional el salario esperado aumenta en `r modelo_clasico_puntos$coefficients[2]` dólares.
+El valor de $\hat{\beta_1}$ indica que por cada punto por partido adicional el salario esperado aumenta en 1338924 dólares.
 
-El límite inferior del intervalo es `r coef_modelo_clasico_puntos %>% filter(term=='PTS') %>% select(conf.low) %>% as.numeric()` y el superior `r coef_modelo_clasico_puntos %>% filter(term=='PTS') %>% select(conf.high) %>% as.numeric()`
+El límite inferior del intervalo es 1240488 y el superior 1437361
 
 Observamos los valores de sigma y el p-valor del test de significatividad global
 
@@ -211,12 +203,17 @@ regresion_bayesiana_simple <- brm(
   seed = 1992
 )
 ```
+### Summary
+
 Observemos un resumen del modelo usando la función `summary`
 
 ```{r}
 # Vemos el resumen del modelo
 summary(regresion_bayesiana_simple)
 ```
+
+#### Configuración del modelo
+
 Lo primero que se observa es la configuración del modelo:
 
 * La **familia** es gaussiana y las **funciones de link** para los parámetros $\mu$ y $\sigma$ son la función identidad
@@ -228,59 +225,105 @@ Lo primero que se observa es la configuración del modelo:
   * Hay 4 **cadenas**
   * Son 2000 **iteraciones** de las cuales 1000 son de **warmup** (por cadena)
   * En total son 4 cadenas cada una con 2000 iteraciones en total, dando un total de 8000 iteraciones. Como la mitad son iteraciones de warmup el **total de muestreos (draws) post warmup** es 4000. 
+  
+#### Parámetros
 
-Luego podemos ver información de los parámetros de la población y de los parámetros especificos de la familia
+Luego podemos ver información de los parámetros de la población y de los parámetros especificos de la familia:
+
+* **Estimate** es el promedio de la distribución a posteriori 
+
+* **Est. Error** es el desvío estándar de la distribución a posteriori
+
+* **l-95% CI** y **u-95% CI** son el límite inferior y superior del intervalo de credibilidad de 95% a dos colas (Credible intervals) basados en los cuantiles de la distribución a posteriori. Esto quiere decir que el límite inferior es el cuantil 2.5 y el superior el 97.5
+
+* **Rhat** brinda información sobre la convergencia del algoritmo para cada parámetro. Si es mayor a 1, las cadenas no han convergido y es recomendable sumar más iteraciones y/o modificar las priors.
+
+Si accedemos al elemento `fit` del modelo obtenemos algunos datos adicionales
 
 ```{r}
+# Accedemos al fit del modelo
 regresion_bayesiana_simple$fit
 ```
+Vemos que se reporta el error estándar de la media y otros cuantiles de la distribución a posteriori de los parámetros
+
+#### Gráficos
+
 Con el comando `plot` podemos observar la distribución a posteriori y el proceso de muestreo de las cadenas de cada parámetro. 
 
 ```{r}
+# Realizamos el gráfico con plot
 plot(regresion_bayesiana_simple)
 ```
 
+
 ## Tidybayes
+
+Tidybayes es una librería que adapta el enfoque de tidyverse para trabajar con los modelos bayesianos de las librerías más comunes en R (aunque no forma parte de tidyverse). Un resumen de esta librería y sus funcionalidades principales se encuentra [aquí](http://mjskay.github.io/tidybayes/)
 
 ```{r}
 library(tidybayes)
 ```
 
+### Acceso a la información
+
+En primer lugar siempre es útil usar la función `get_variables` para obtener las variables de nuestro modelo
+
 ```{r}
 get_variables(regresion_bayesiana_simple)
 ```
 
+Dos funciones muy útiles son `spread_draws` y `gather_draws`. En ambas hay que seleccionar cuáles son las variables que queremos analizar; la primera nos devolvera la información sobre el proceso de muestreo en **formato wide** y la segunda en **formato long**.
+
+Vamos a obtener el valor de las variables seleccionadas en cada una de las iteraciones post-warmup para cada cadena
 
 ```{r}
+# Usando la funcion spread_draws
 regresion_bayesiana_simple %>%
-  spread_draws(b_Intercept, b_PTS, sigma)
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  filter(.iteration <= 10)
 ```
 
 ```{r}
+# Usando la funcion gather_draws
 regresion_bayesiana_simple %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  filter(.iteration <= 10)
+```
+
+### Resumen distribución a posteriori
+
+Existe una gran cantidad de funciones para obtener estadísticos de resumen de las distribuciones a posteriori de los parámetros.
+
+Se pueden calcular estadísticos como la media, mediana y moda para distintos tipos de intervalos:
+
+* **Intervalo de Cuantil** (Quantile Interval): es el intervalo en el que la probabilidad de estar por encima y por debajo son la misma
+
+* **Intervalo de Mayor Densidad** (Highest Density Interval): es el intervalo más angosto o corto que concentra un determinado nivel de probabilidad
+
+Por ejemplo, podemos calcular la media de nuestros tres parámetros usando el intervalo de cuantil con la función `mean_qi` y con el intervalo de mayor densidad usando la función `mean_hdi`
+
+```{r}
+# Calculamos la media segùn el intervalo de cuantil
+media_qi = regresion_bayesiana_simple %>%
   gather_draws(b_Intercept, b_PTS, sigma) %>% 
   mean_qi()
+
+# Calculamos la media segùn el intervalo de mayor densidad
+media_hdi = regresion_bayesiana_simple %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  mean_hdi()
+
+# Combinamos ambos resultados
+bind_rows(media_qi, media_hdi) %>% arrange(.variable)
 ```
 
-
+La función `summarise_draws` permite obtener una gran cantidad de información de la distribución a posteriori. Por default utiliza el método de intervalo por cuantiles.
 
 ```{r}
+# Resumen general de las distribuciones a posteriori
 regresion_bayesiana_simple %>%
-  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
   summarise_draws()
-```
-
-
-
-```{r}
-regresion_bayesiana_simple %>% 
-  gather_draws(b_Intercept, b_PTS, sigma) %>% 
-  ggplot(aes(x=.iteration, y=.value, color=factor(.chain))) +
-  geom_line() +
-  facet_wrap(facets = ~.variable, ncol=1,scales = 'free') +
-  scale_color_discrete() +
-  theme_bw()
-
 ```
 
 ## Modelo simple: Priors
@@ -305,9 +348,19 @@ regresion_bayesiana_multiple <- brm(
 ```{r}
 summary(regresion_bayesiana_multiple)
 ```
-## Modelo categóricas
+
+```{r}
+regresion_bayesiana_multiple %>%
+  gather_draws(b_PTS, b_Age, b_TRB) %>%
+  ggplot(aes(x = .value, y = .variable, fill=.variable)) +
+  stat_halfeye() + 
+  labs(title = "Distribuciones a posteriori de los parámetros", x="", y="Parámetro") +
+  theme_bw()
+```
 
 # Experimentos
+
+En esta sección presentamos dos experimentos que muestran la importancia de realizar iteraciones de warmup en un modelo bayesiano
 
 ## Sin warm-up
 
@@ -317,21 +370,29 @@ summary(regresion_bayesiana_multiple)
 regresion_bayesiana_no_warmup <- brm(
   formula = salario ~ PTS,
   data = nba_salarios_estadisticas_partido,
-  warmup = 0,
+  warmup = 0, # Seteamos el warmup en 0
   cores = 6,
   seed = 1992
 )
 ```
+En el proceso ya nos aparecen varias advertencias indicando que el algoritmo/modelo parece haber divergido y que las medias y medianas que surgen de las distribuciones posteriores no son confiables.  
+
+Miremos el resumen del modelo:
+
 ```{r}
 summary(regresion_bayesiana_no_warmup)
 ```
+Observando el resumen vemos que los valores de **Rhat** son enormes, lo cual indica que el algoritmo no convergió. Además se observa que la media y los límites de los intervalos dan valores muy distintos a los que ya habíamos observado.
+
+Por último, veamos los gráficos de las distribuciones a posteriori y del proceso de muestreo
+
 ```{r}
 plot(regresion_bayesiana_no_warmup, ask = FALSE)
 ```
 
 ## Poco warm-up
 
-¿Qué pasa con nuestro modelo si realizamos un warmup muy pequeño?
+¿Qué pasa con nuestro modelo si realizamos un warmup muy pequeño? En este caso, hagamos un warmup de solo 100 iteraciones
 
 ```{r, echo=TRUE, results='hide'}
 regresion_bayesiana_poco_warmup <- brm(
@@ -342,9 +403,17 @@ regresion_bayesiana_poco_warmup <- brm(
   seed = 1992
 )
 ```
+Nuevamente en el proceso ya nos aparecen varias advertencias indicando que el algoritmo/modelo parece haber divergido  y que las medias y medianas que surgen de las distribuciones posteriores no son confiables.
+
+Veamos el resumen del modelo:
+
 ```{r}
 summary(regresion_bayesiana_poco_warmup)
 ```
+Observando el resumen vemos que los valores de **Rhat** son grandes y superan al 1 en el caso de $\beta_0$ y $\beta_1$ mientras que para el caso de $\sigma$ el valor es igual a 1. Además, al igual que antes se observa que la media y los límites de los intervalos dan valores muy distintos a los que ya habíamos observado.
+
+Por último, veamos los gráficos de las distribuciones a posteriori y del proceso de muestreo
+
 ```{r}
 plot(regresion_bayesiana_poco_warmup, ask = FALSE)
 ```
