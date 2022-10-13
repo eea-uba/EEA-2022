@@ -18,7 +18,7 @@ div.main-container {
 </style>
 
 
-```{r, message=FALSE}
+```{r, message=FALSE, warning=FALSE}
 # Carga de librerías
 library(tidyverse)
 library(tidymodels)
@@ -134,7 +134,8 @@ Observamos los valores de los coeficientes estimados junto con el p-valor del te
 
 ```{r}
 # Observamos los valores de los coeficientes estimados
-tidy(modelo_clasico_multiple, conf.int = TRUE)
+coef_modelo_clasico_multiple = tidy(modelo_clasico_multiple, conf.int = TRUE)
+coef_modelo_clasico_multiple
 ```
 
 Observamos los valores de sigma y el p-valor del test de significatividad global
@@ -255,12 +256,11 @@ Con el comando `plot` podemos observar la distribución a posteriori y el proces
 plot(regresion_bayesiana_simple)
 ```
 
-
 ## Tidybayes
 
 Tidybayes es una librería que adapta el enfoque de tidyverse para trabajar con los modelos bayesianos de las librerías más comunes en R (aunque no forma parte de tidyverse). Un resumen de esta librería y sus funcionalidades principales se encuentra [aquí](http://mjskay.github.io/tidybayes/)
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(tidybayes)
 ```
 
@@ -328,13 +328,80 @@ regresion_bayesiana_simple %>%
 
 ## Modelo simple: Priors
 
-### Priors adecuadas
+Los modelos bayesianos requieren que se establezcan distribuciones priors para cada uno de los parámetros. Las mismas pueden ser no informativas o representar supuestos fuertes sobre los datos.
 
-### Priors inadecuadas
+Veamos las priors de nuestro modelo de regresión bayesiana simple con la función `prior_summary` de **brms**
+
+```{r}
+# Observamos las priors por default
+prior_summary(regresion_bayesiana_simple)
+```
+
+En este caso observamos que usa por default una distribución t de Student para el intercepto y el desvío estándar. El parámetro asociado a la variable de puntos por partido tiene una prior plana (no informativa).
+
+Para definir priors vamos a utilizar el argumento **prior** dentro de la función `brm`. La lista de distribuciones priors que podemos utilizar es muy extensa y se pueden revisar en la documentación de Stan: [distribuciones discretas](https://mc-stan.org/docs/functions-reference/discrete-distributions.html#discrete-distributions) y [distribuciones continuas](https://mc-stan.org/docs/functions-reference/continuous-distributions.html#continuous-distributions)
+
+Para ejemplificar el impacto de las priors comparemos los resultados de especificar una distribución prior "adecuada" y otra "inadecuada". En ambos casos vamos a estar una distribución normal.
+
+Para la distribución prior "adecuada" vamos a plantear $\beta_1 \sim N(1000000, 250000)$
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_simple_prior_adecuada <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  prior = prior(normal(1000000, 250000), coef = PTS),
+  cores = 6,
+  seed = 1992
+)
+```
+
+Para la distribución prior "inadecuada" vamos a plantear $\beta_1 \sim N(-1000000, 100000)$
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_simple_prior_inadecuada <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  prior = prior(normal(-1000000, 100000), coef = PTS),
+  cores = 6,
+  seed = 1992
+)
+```
+
+Observemos las priors en ambos casos:
+
+```{r}
+# Observamos las priors del modelo adecuado
+prior_summary(regresion_bayesiana_simple_prior_adecuada)
+```
+
+```{r}
+# Observamos las priors del modelo adecuado
+prior_summary(regresion_bayesiana_simple_prior_inadecuada)
+```
+
+Veamos el resumen de las distribuciones a posteriori para ambos casos
+
+```{r}
+# Resumen general de las distribuciones a posteriori
+regresion_bayesiana_simple_prior_adecuada %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+Para el caso de la prior "adecuada" obtenemos una distribución a posteriori muy similar a la que teníamos con la prior no informativa
+
+```{r}
+# Resumen general de las distribuciones a posteriori
+regresion_bayesiana_simple_prior_inadecuada %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+Mientras que en el caso de la prior inadecuada vemos cambios importantes no solo en la distribución a posteriori del parámetro $\beta_1$ sino también para $\beta_0$ y $\sigma$
 
 ## Modelo multiple
 
-Realicemos un primer modelo con la configuración default
+Realicemos un modelo múltiple con la configuración default usando las variables PTS, Age y TRB como predictoras del salario
 
 ```{r, echo=TRUE, results='hide'}
 regresion_bayesiana_multiple <- brm(
@@ -345,9 +412,13 @@ regresion_bayesiana_multiple <- brm(
 )
 ```
 
+Observemos un resumen del modelo usando la función `summary`
+
 ```{r}
 summary(regresion_bayesiana_multiple)
 ```
+
+Con el stat `stat_halfeye` de **tidybayes** podemos realizar un gráfico de las distribuciones a posteriori de los parámetros de interés.
 
 ```{r}
 regresion_bayesiana_multiple %>%
@@ -355,6 +426,7 @@ regresion_bayesiana_multiple %>%
   ggplot(aes(x = .value, y = .variable, fill=.variable)) +
   stat_halfeye() + 
   labs(title = "Distribuciones a posteriori de los parámetros", x="", y="Parámetro") +
+  scale_fill_discrete(guide="none") +
   theme_bw()
 ```
 
