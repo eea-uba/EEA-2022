@@ -30,7 +30,7 @@ En esta notebook desarrollaremos modelos de regresión clásica y bayesiana para
 
 # Datasets 
 
-Trabajaremos con los datasets de salarios de la temporada 2022-2023 de la NBA y las estadísticas por partido de la temporada 2021-2022. La información se scrappeó de la página basketball-reference y la construcción estos datasets se encuentra en (link a la notebook).
+Trabajaremos con los datasets de salarios de la temporada 2022-2023 de la NBA y las estadísticas por partido de la temporada 2021-2022. La información se scrappeó de la página basketball-reference y la construcción estos datasets se encuentra en la  [notebook de construcción](../clase 10/creacion_datasets_nba.html).
 
 Cargamos los datasets y realizamos un join entre ambos mediante el nombre del jugador
 
@@ -153,7 +153,9 @@ $Y \sim N(\beta_0+\sum\limits_{i=1}^p{\beta_iX_i} , \sigma)$
 Donde:
 
 $\beta_0 \sim N(0,\tau_{\beta_0})$
+
 $\beta_i \sim N(0,\tau_{\beta_i})$ para i entre 1 y p
+
 $\sigma \sim Exp(\lambda)$
 
 Siendo $\tau_{\beta_0}, \tau_{\beta_i}, \lambda$ fijos y propuestos por nosotros
@@ -303,12 +305,12 @@ Se pueden calcular estadísticos como la media, mediana y moda para distintos ti
 Por ejemplo, podemos calcular la media de nuestros tres parámetros usando el intervalo de cuantil con la función `mean_qi` y con el intervalo de mayor densidad usando la función `mean_hdi`
 
 ```{r}
-# Calculamos la media segùn el intervalo de cuantil
+# Calculamos la media según el intervalo de cuantil
 media_qi = regresion_bayesiana_simple %>%
   gather_draws(b_Intercept, b_PTS, sigma) %>% 
   mean_qi()
 
-# Calculamos la media segùn el intervalo de mayor densidad
+# Calculamos la media según el intervalo de mayor densidad
 media_hdi = regresion_bayesiana_simple %>%
   gather_draws(b_Intercept, b_PTS, sigma) %>% 
   mean_hdi()
@@ -341,7 +343,7 @@ En este caso observamos que usa por default una distribución t de Student para 
 
 Para definir priors vamos a utilizar el argumento **prior** dentro de la función `brm`. La lista de distribuciones priors que podemos utilizar es muy extensa y se pueden revisar en la documentación de Stan: [distribuciones discretas](https://mc-stan.org/docs/functions-reference/discrete-distributions.html#discrete-distributions) y [distribuciones continuas](https://mc-stan.org/docs/functions-reference/continuous-distributions.html#continuous-distributions)
 
-Para ejemplificar el impacto de las priors comparemos los resultados de especificar una distribución prior "adecuada" y otra "inadecuada". En ambos casos vamos a estar una distribución normal.
+Para ejemplificar el impacto de las priors comparemos los resultados de especificar una distribución prior "adecuada" y otra "inadecuada". En ambos casos vamos a estar usando una distribución normal.
 
 Para la distribución prior "adecuada" vamos a plantear $\beta_1 \sim N(1000000, 250000)$
 
@@ -397,7 +399,38 @@ regresion_bayesiana_simple_prior_inadecuada %>%
   summarise_draws()
 ```
 
-Mientras que en el caso de la prior inadecuada vemos cambios importantes no solo en la distribución a posteriori del parámetro $\beta_1$ sino también para $\beta_0$ y $\sigma$
+En el caso de la prior inadecuada vemos que la media de la distribución a posteriori de $\beta_1$ es positiva y tiene un valor de 751032 a pesar que habíamos postulado una media negativa y un desvío "pequeño" . Sin embargo, observamos cambios importantes no solo en la distribución a posteriori del parámetro $\beta_1$ sino también para $\beta_0$ y $\sigma$. 
+
+Veamos gráficamente la comparación de las distribuciones a posteriori de los parámetros entre los modelos de distintas priors:
+
+```{r}
+# Obtenemos las draws del modelo con prior adecuada
+draws_prior_adecuada = regresion_bayesiana_simple_prior_adecuada %>%
+                          gather_draws(b_Intercept, b_PTS, sigma) %>% 
+                          ungroup() %>% 
+                          transmute(prior = 'adecuada',
+                                    parametro = .variable,
+                                    valor = .value)
+
+# Obtenemos las draws del modelo con prior inadecuada
+draws_prior_inadecuada = regresion_bayesiana_simple_prior_inadecuada %>%
+                          gather_draws(b_Intercept, b_PTS, sigma) %>% 
+                          ungroup() %>% 
+                          transmute(prior = 'inadecuada',
+                                    parametro = .variable,
+                                    valor = .value)
+# Concatenamos ambos dataframes
+comparacion_draws = bind_rows(draws_prior_adecuada, draws_prior_inadecuada)
+
+# Gráfico de ambas distribuciones
+ggplot(data=comparacion_draws, aes(x = valor, y = prior, fill=prior)) +
+  stat_halfeye() + 
+  facet_wrap(~parametro, scales = "free_x", )+
+  labs(title = "Distribuciones a posteriori de los parámetros", subtitle = "Comparación priors", x="", y="Prior") +
+  scale_fill_manual(values=c("steelblue","firebrick"), guide="none") +
+  theme_bw()
+```
+
 
 ## Modelo multiple
 
@@ -421,14 +454,46 @@ summary(regresion_bayesiana_multiple)
 Con el stat `stat_halfeye` de **tidybayes** podemos realizar un gráfico de las distribuciones a posteriori de los parámetros de interés.
 
 ```{r}
+# Realizamos el gràfico de las distribuciones a posteriori de los parámetros
 regresion_bayesiana_multiple %>%
   gather_draws(b_PTS, b_Age, b_TRB) %>%
   ggplot(aes(x = .value, y = .variable, fill=.variable)) +
   stat_halfeye() + 
   labs(title = "Distribuciones a posteriori de los parámetros", x="", y="Parámetro") +
-  scale_fill_discrete(guide="none") +
+  scale_fill_manual(values=c("steelblue", "orange", "firebrick") ,guide="none") +
   theme_bw()
 ```
+
+También podemos comparar los resultados de la estimación puntual y los intervalos de la distribución a posteriori de los parámetros del modelo bayesiano vs la estimación e intervalos de confianza del modelo lineal clásico. Con la función `to_broom_names` de **tidybayes** podemos tener rápidamente nombres de columna idénticos a los que nos brinda el comando `tidy` de **broom**
+
+```{r}
+# Construimos el dataset de estimacion del modelo bayesiano
+tidy_bayesiano_multiple = regresion_bayesiana_multiple %>%
+  gather_draws(b_PTS, b_Age, b_TRB) %>%
+  mean_qi() %>%
+  to_broom_names() %>%
+  mutate(term = str_remove(term, "b_"),
+         modelo = "bayesiano")
+tidy_bayesiano_multiple
+```
+
+```{r}
+# Emprolijamos el dataset de estimacionn del modelo clásico
+tidy_clasico_multiple = coef_modelo_clasico_multiple %>% 
+                          filter(term!="(Intercept)") %>% 
+                          mutate(modelo="clasico")
+tidy_clasico_multiple
+```
+
+Concatenamos ambos datasets y seleccionamos las columnas de la estimación y los límites del intervalo de confianza
+
+```{r}
+bind_rows(tidy_clasico_multiple, tidy_bayesiano_multiple) %>% 
+  select(modelo, term, estimate, conf.low, conf.high) %>% 
+  arrange(term)
+```
+
+Podemos observar que tanto el valor estimado como  los límites de los intervalos son muy similares entre ambos modelos.
 
 # Experimentos
 
@@ -490,10 +555,3 @@ Por último, veamos los gráficos de las distribuciones a posteriori y del proce
 plot(regresion_bayesiana_poco_warmup, ask = FALSE)
 ```
 
-https://cran.r-project.org/web/packages/tidybayes/vignettes/tidy-brms.html
-
-https://www.r-bloggers.com/2019/11/creating-and-using-a-simple-bayesian-linear-model-in-brms-and-r/
-
-https://michael-franke.github.io/intro-data-analysis/extracting-posterior-samples.html
-
-http://mjskay.github.io/tidybayes/articles/tidy-brms.html
