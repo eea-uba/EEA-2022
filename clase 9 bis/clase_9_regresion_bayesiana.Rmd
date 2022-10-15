@@ -45,7 +45,10 @@ estadisticas_por_partido_nba = read_csv("../Fuentes/nba/estadisticas_por_partido
 nba_salarios_estadisticas_partido = salarios_nba %>% 
                             inner_join(y=estadisticas_por_partido_nba, on=jugador) %>% 
                             drop_na()
-
+# El dataset final queda
+glimpse(nba_salarios_estadisticas_partido)
+# Observemos los 10 jugadores con mayor salario
+nba_salarios_estadisticas_partido %>% slice_max(order_by = salario, n=10)
 ```
 # Analisis exploratorios
 

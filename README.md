@@ -114,7 +114,13 @@ Extensiones del Modelo de Regresión Lineal Múltiple.
 
 ### Clase 9: 15-10
 
-Regresión Bayesiana 
+Regresión Bayesiana
+
+- [Regresión Bayesiana](clase 9 bis/clase_9_regresion_bayesiana.html)
+
+#### Construcción datasets NBA
+
+- [Diccionario de términos NBA](clase 10/creacion_datasets_nba.html)
 
 ### Clase 10: 22-10
 
