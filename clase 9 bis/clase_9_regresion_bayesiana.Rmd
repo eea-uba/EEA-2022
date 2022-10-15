@@ -1,0 +1,560 @@
+---
+title: "Regresión Bayesiana"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "15 de Octubre de 2022"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float: yes
+---
+
+<style type="text/css">
+div.main-container {
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+</style>
+
+
+```{r, message=FALSE, warning=FALSE}
+# Carga de librerías
+library(tidyverse)
+library(tidymodels)
+library(brms)
+library(GGally)
+```
+
+En esta notebook desarrollaremos modelos de regresión clásica y bayesiana para explicar/predecir los salarios de los jugadores de la NBA para la temporada 2022-2023 en base a información de la temporada pasada.
+
+# Datasets 
+
+Trabajaremos con los datasets de salarios de la temporada 2022-2023 de la NBA y las estadísticas por partido de la temporada 2021-2022. La información se scrappeó de la página basketball-reference y la construcción estos datasets se encuentra en la  [notebook de construcción](../clase 10/creacion_datasets_nba.html).
+
+Cargamos los datasets y realizamos un join entre ambos mediante el nombre del jugador
+
+```{r}
+# Salarios 2022-2023
+salarios_nba = read_csv("../Fuentes/nba/salarios_nba_2023.csv")
+# Estadísticas por partido 2021-2022
+estadisticas_por_partido_nba = read_csv("../Fuentes/nba/estadisticas_por_partido_nba_2022.csv") %>%
+  # Conservamos el primer tipo de posicion declarada
+  mutate(Pos = str_remove(string = Pos, pattern = "\\-.*"))
+# Realizamos un join entre ambas tablas mediante el nombre
+nba_salarios_estadisticas_partido = salarios_nba %>% 
+                            inner_join(y=estadisticas_por_partido_nba, on=jugador) %>% 
+                            drop_na()
+# El dataset final queda
+glimpse(nba_salarios_estadisticas_partido)
+# Observemos los 10 jugadores con mayor salario
+nba_salarios_estadisticas_partido %>% slice_max(order_by = salario, n=10)
+```
+# Analisis exploratorios
+
+Como se mencionó previamente, nuestro interés está en explicar la variable del salario anual. Usaremos pocas variables para mantener los modelos sencillos:
+
+**Variable dependiente**
+
+* salario: salario anual de la temporada 2022-23
+
+**Variables independientes**
+
+* PTS: puntos por partido en la temporada 2021-22
+* Age: edad en años del jugador en la temporada 2021-22
+* TRB: rebotes totales (ofensivos y defensivos) por partido en la temporada 2021-22
+
+Realizamos primero un correlagrama entre las 4 variables numéricas
+
+```{r}
+nba_salarios_estadisticas_partido %>% 
+  select(Age, PTS, TRB, salario) %>% 
+  ggpairs(upper = list(continuous = wrap("cor", size = 3, hjust=0.5)), progress=FALSE) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") + 
+  theme_bw() +
+  labs(title='Correlograma variables continuas')
+```
+
+Observamos:
+
+* Todas las variables presentan asimetría positica. Se destaca la distribución del salario con una asimetrìa muy fuerte
+
+* Las tres variables presentan una correlación positiva con el salario. Los puntos por partido presentan una correlación fuerte (0.798) mientras que los rebotes totales por partido y la edad presentan valores de correlación más moderados
+
+# Modelo lineal clásico
+
+Recordemos que el enfoque clásico postula parámetros fijos y desconocidos y un target aleatorio
+
+$Y \sim N(\beta_0+\sum\limits_{i=1}^p{\beta_iX_i} , \sigma)$
+
+Siendo $\beta_0, \beta_1,..., \beta_p,  \sigma$ los parámetros fijos y desconocidos que debemos estimar.
+
+## Modelo simple
+
+Realicemos un modelo de regresión simple para predecir el salario en función de los puntos por partido:
+
+$Salario = \beta_0 + \beta_1 Puntos + \varepsilon$
+
+En este caso vamos a estimar tres parámetros
+
+```{r}
+# Fiteamos el modelo
+modelo_clasico_puntos = lm(data = nba_salarios_estadisticas_partido, formula = salario ~ PTS)
+```
+
+Observamos los valores de los coeficientes estimados junto con el p-valor del test de significatividad individual y los límites de los intervalos de confianza al 95%
+
+```{r}
+# Observamos los valores de los coeficientes estimados
+coef_modelo_clasico_puntos = tidy(modelo_clasico_puntos, conf.int = TRUE, conf.level = 0.95)
+coef_modelo_clasico_puntos
+```
+
+El valor de $\hat{\beta_1}$ indica que por cada punto por partido adicional el salario esperado aumenta en 1338924 dólares.
+
+El límite inferior del intervalo es 1240488 y el superior 1437361
+
+Observamos los valores de sigma y el p-valor del test de significatividad global
+
+```{r}
+# Observamos los valores de la evaluación global
+glance(modelo_clasico_puntos)
+```
+## Modelo múltiple
+
+Realicemos un modelo de regresión múltiple para predecir el salario en función de los puntos por partido, edad y rebotes totales por partido:
+
+$Salario = \beta_0 + \beta_1 Puntos + \beta_2 Edad + \beta_3 RebotesTotales+ \varepsilon$
+
+En este caso vamos a estimar cinco parámetros
+
+```{r}
+# Fiteamos el modelo
+modelo_clasico_multiple = lm(data = nba_salarios_estadisticas_partido, formula = salario ~ PTS + Age + TRB)
+```
+
+Observamos los valores de los coeficientes estimados junto con el p-valor del test de significatividad individual y los límites de los intervalos de confianza al 95%
+
+```{r}
+# Observamos los valores de los coeficientes estimados
+coef_modelo_clasico_multiple = tidy(modelo_clasico_multiple, conf.int = TRUE)
+coef_modelo_clasico_multiple
+```
+
+Observamos los valores de sigma y el p-valor del test de significatividad global
+
+```{r}
+# Observamos los valores de la evaluación global
+glance(modelo_clasico_multiple)
+```
+# Modelo Bayesiano
+
+Recordemos que el enfoque bayesiano postula parámetros aleatorios para el mismo modelo:
+
+$Y \sim N(\beta_0+\sum\limits_{i=1}^p{\beta_iX_i} , \sigma)$
+
+Donde:
+
+$\beta_0 \sim N(0,\tau_{\beta_0})$
+
+$\beta_i \sim N(0,\tau_{\beta_i})$ para i entre 1 y p
+
+$\sigma \sim Exp(\lambda)$
+
+Siendo $\tau_{\beta_0}, \tau_{\beta_i}, \lambda$ fijos y propuestos por nosotros
+
+## Paquete brms
+
+Vamos a utilizar la implementación de modelos bayesianos de la librería **brms** (Bayesian Regression Models using Stan). El paper de esta librería se puede encontrar [aquí](https://cran.r-project.org/web/packages/brms/vignettes/brms_overview.pdf)
+
+La función que vamos a utilizar es `brm()` la cual permite construir una gran variedad de modelos bayesianos. Algunos de sus parámetros más relevantes son: 
+
+**Modelo**
+
+* `formula`: la fórmula del modelo que queremos realizar
+
+* `data`: dataset a utilizar
+
+* `family`: distribución de la variable respuesta/target y función link. Por default se aplica la distribución gaussiana/normal
+
+* `prior`: distribuciones prior de los parámetros
+
+**Simulación**
+
+* `init`: valores iniciales para el muestreo de los parámetros. Por default es random
+
+* `chains`: cantidad de cadenas de Markov. Por default son 4
+
+* `iter`: cantidad de iteraciones totales por cadena incluyendo warmup. Por default son 2000
+
+* `warmup`: cantidad de iteraciones de warmup. Por default es iter/2
+
+**Ejecución**
+
+* `cores`: cantidad de núcleos a utilizar en la ejecución de las cadenas de manera paralelizada. Por default es 1.
+
+* `seed`: semilla para reproducibilidad
+
+## Modelo simple
+
+Realicemos el mismo modelo simple con la configuración default de brms:
+
+$Salario \sim N(\beta_0+\beta_1Puntos, \sigma)$
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_simple <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  cores = 6,
+  seed = 1992
+)
+```
+### Summary
+
+Observemos un resumen del modelo usando la función `summary`
+
+```{r}
+# Vemos el resumen del modelo
+summary(regresion_bayesiana_simple)
+```
+
+#### Configuración del modelo
+
+Lo primero que se observa es la configuración del modelo:
+
+* La **familia** es gaussiana y las **funciones de link** para los parámetros $\mu$ y $\sigma$ son la función identidad
+
+* La fórmula y dataset que definimos
+
+* La configuración para el muestreo (draws) para el proceso de MCMC:
+  
+  * Hay 4 **cadenas**
+  * Son 2000 **iteraciones** de las cuales 1000 son de **warmup** (por cadena)
+  * En total son 4 cadenas cada una con 2000 iteraciones en total, dando un total de 8000 iteraciones. Como la mitad son iteraciones de warmup el **total de muestreos (draws) post warmup** es 4000. 
+  
+#### Parámetros
+
+Luego podemos ver información de los parámetros de la población y de los parámetros especificos de la familia:
+
+* **Estimate** es el promedio de la distribución a posteriori 
+
+* **Est. Error** es el desvío estándar de la distribución a posteriori
+
+* **l-95% CI** y **u-95% CI** son el límite inferior y superior del intervalo de credibilidad de 95% a dos colas (Credible intervals) basados en los cuantiles de la distribución a posteriori. Esto quiere decir que el límite inferior es el cuantil 2.5 y el superior el 97.5
+
+* **Rhat** brinda información sobre la convergencia del algoritmo para cada parámetro. Si es mayor a 1, las cadenas no han convergido y es recomendable sumar más iteraciones y/o modificar las priors.
+
+Si accedemos al elemento `fit` del modelo obtenemos algunos datos adicionales
+
+```{r}
+# Accedemos al fit del modelo
+regresion_bayesiana_simple$fit
+```
+Vemos que se reporta el error estándar de la media y otros cuantiles de la distribución a posteriori de los parámetros
+
+#### Gráficos
+
+Con el comando `plot` podemos observar la distribución a posteriori y el proceso de muestreo de las cadenas de cada parámetro. 
+
+```{r}
+# Realizamos el gráfico con plot
+plot(regresion_bayesiana_simple)
+```
+
+## Tidybayes
+
+Tidybayes es una librería que adapta el enfoque de tidyverse para trabajar con los modelos bayesianos de las librerías más comunes en R (aunque no forma parte de tidyverse). Un resumen de esta librería y sus funcionalidades principales se encuentra [aquí](http://mjskay.github.io/tidybayes/)
+
+```{r, message=FALSE, warning=FALSE}
+library(tidybayes)
+```
+
+### Acceso a la información
+
+En primer lugar siempre es útil usar la función `get_variables` para obtener las variables de nuestro modelo
+
+```{r}
+get_variables(regresion_bayesiana_simple)
+```
+
+Dos funciones muy útiles son `spread_draws` y `gather_draws`. En ambas hay que seleccionar cuáles son las variables que queremos analizar; la primera nos devolvera la información sobre el proceso de muestreo en **formato wide** y la segunda en **formato long**.
+
+Vamos a obtener el valor de las variables seleccionadas en cada una de las iteraciones post-warmup para cada cadena
+
+```{r}
+# Usando la funcion spread_draws
+regresion_bayesiana_simple %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  filter(.iteration <= 10)
+```
+
+```{r}
+# Usando la funcion gather_draws
+regresion_bayesiana_simple %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  filter(.iteration <= 10)
+```
+
+### Resumen distribución a posteriori
+
+Existe una gran cantidad de funciones para obtener estadísticos de resumen de las distribuciones a posteriori de los parámetros.
+
+Se pueden calcular estadísticos como la media, mediana y moda para distintos tipos de intervalos:
+
+* **Intervalo de Cuantil** (Quantile Interval): es el intervalo en el que la probabilidad de estar por encima y por debajo son la misma
+
+* **Intervalo de Mayor Densidad** (Highest Density Interval): es el intervalo más angosto o corto que concentra un determinado nivel de probabilidad
+
+Por ejemplo, podemos calcular la media de nuestros tres parámetros usando el intervalo de cuantil con la función `mean_qi` y con el intervalo de mayor densidad usando la función `mean_hdi`
+
+```{r}
+# Calculamos la media según el intervalo de cuantil
+media_qi = regresion_bayesiana_simple %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  mean_qi()
+
+# Calculamos la media según el intervalo de mayor densidad
+media_hdi = regresion_bayesiana_simple %>%
+  gather_draws(b_Intercept, b_PTS, sigma) %>% 
+  mean_hdi()
+
+# Combinamos ambos resultados
+bind_rows(media_qi, media_hdi) %>% arrange(.variable)
+```
+
+La función `summarise_draws` permite obtener una gran cantidad de información de la distribución a posteriori. Por default utiliza el método de intervalo por cuantiles.
+
+```{r}
+# Resumen general de las distribuciones a posteriori
+regresion_bayesiana_simple %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+## Modelo simple: Priors
+
+Los modelos bayesianos requieren que se establezcan distribuciones priors para cada uno de los parámetros. Las mismas pueden ser no informativas o representar supuestos fuertes sobre los datos.
+
+Veamos las priors de nuestro modelo de regresión bayesiana simple con la función `prior_summary` de **brms**
+
+```{r}
+# Observamos las priors por default
+prior_summary(regresion_bayesiana_simple)
+```
+
+En este caso observamos que usa por default una distribución t de Student para el intercepto y el desvío estándar. El parámetro asociado a la variable de puntos por partido tiene una prior plana (no informativa).
+
+Para definir priors vamos a utilizar el argumento **prior** dentro de la función `brm`. La lista de distribuciones priors que podemos utilizar es muy extensa y se pueden revisar en la documentación de Stan: [distribuciones discretas](https://mc-stan.org/docs/functions-reference/discrete-distributions.html#discrete-distributions) y [distribuciones continuas](https://mc-stan.org/docs/functions-reference/continuous-distributions.html#continuous-distributions)
+
+Para ejemplificar el impacto de las priors comparemos los resultados de especificar una distribución prior "adecuada" y otra "inadecuada". En ambos casos vamos a estar usando una distribución normal.
+
+Para la distribución prior "adecuada" vamos a plantear $\beta_1 \sim N(1000000, 250000)$
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_simple_prior_adecuada <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  prior = prior(normal(1000000, 250000), coef = PTS),
+  cores = 6,
+  seed = 1992
+)
+```
+
+Para la distribución prior "inadecuada" vamos a plantear $\beta_1 \sim N(-1000000, 100000)$
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_simple_prior_inadecuada <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  prior = prior(normal(-1000000, 100000), coef = PTS),
+  cores = 6,
+  seed = 1992
+)
+```
+
+Observemos las priors en ambos casos:
+
+```{r}
+# Observamos las priors del modelo adecuado
+prior_summary(regresion_bayesiana_simple_prior_adecuada)
+```
+
+```{r}
+# Observamos las priors del modelo adecuado
+prior_summary(regresion_bayesiana_simple_prior_inadecuada)
+```
+
+Veamos el resumen de las distribuciones a posteriori para ambos casos
+
+```{r}
+# Resumen general de las distribuciones a posteriori
+regresion_bayesiana_simple_prior_adecuada %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+Para el caso de la prior "adecuada" obtenemos una distribución a posteriori muy similar a la que teníamos con la prior no informativa
+
+```{r}
+# Resumen general de las distribuciones a posteriori
+regresion_bayesiana_simple_prior_inadecuada %>%
+  spread_draws(b_Intercept, b_PTS, sigma) %>% 
+  summarise_draws()
+```
+
+En el caso de la prior inadecuada vemos que la media de la distribución a posteriori de $\beta_1$ es positiva y tiene un valor de 751032 a pesar que habíamos postulado una media negativa y un desvío "pequeño" . Sin embargo, observamos cambios importantes no solo en la distribución a posteriori del parámetro $\beta_1$ sino también para $\beta_0$ y $\sigma$. 
+
+Veamos gráficamente la comparación de las distribuciones a posteriori de los parámetros entre los modelos de distintas priors:
+
+```{r}
+# Obtenemos las draws del modelo con prior adecuada
+draws_prior_adecuada = regresion_bayesiana_simple_prior_adecuada %>%
+                          gather_draws(b_Intercept, b_PTS, sigma) %>% 
+                          ungroup() %>% 
+                          transmute(prior = 'adecuada',
+                                    parametro = .variable,
+                                    valor = .value)
+
+# Obtenemos las draws del modelo con prior inadecuada
+draws_prior_inadecuada = regresion_bayesiana_simple_prior_inadecuada %>%
+                          gather_draws(b_Intercept, b_PTS, sigma) %>% 
+                          ungroup() %>% 
+                          transmute(prior = 'inadecuada',
+                                    parametro = .variable,
+                                    valor = .value)
+# Concatenamos ambos dataframes
+comparacion_draws = bind_rows(draws_prior_adecuada, draws_prior_inadecuada)
+
+# Gráfico de ambas distribuciones
+ggplot(data=comparacion_draws, aes(x = valor, y = prior, fill=prior)) +
+  stat_halfeye() + 
+  facet_wrap(~parametro, scales = "free_x", )+
+  labs(title = "Distribuciones a posteriori de los parámetros", subtitle = "Comparación priors", x="", y="Prior") +
+  scale_fill_manual(values=c("steelblue","firebrick"), guide="none") +
+  theme_bw()
+```
+
+
+## Modelo multiple
+
+Realicemos un modelo múltiple con la configuración default usando las variables PTS, Age y TRB como predictoras del salario
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_multiple <- brm(
+  formula = salario ~ PTS + Age + TRB,
+  data = nba_salarios_estadisticas_partido,
+  cores = 6,
+  seed = 1992
+)
+```
+
+Observemos un resumen del modelo usando la función `summary`
+
+```{r}
+summary(regresion_bayesiana_multiple)
+```
+
+Con el stat `stat_halfeye` de **tidybayes** podemos realizar un gráfico de las distribuciones a posteriori de los parámetros de interés.
+
+```{r}
+# Realizamos el gràfico de las distribuciones a posteriori de los parámetros
+regresion_bayesiana_multiple %>%
+  gather_draws(b_PTS, b_Age, b_TRB) %>%
+  ggplot(aes(x = .value, y = .variable, fill=.variable)) +
+  stat_halfeye() + 
+  labs(title = "Distribuciones a posteriori de los parámetros", x="", y="Parámetro") +
+  scale_fill_manual(values=c("steelblue", "orange", "firebrick") ,guide="none") +
+  theme_bw()
+```
+
+También podemos comparar los resultados de la estimación puntual y los intervalos de la distribución a posteriori de los parámetros del modelo bayesiano vs la estimación e intervalos de confianza del modelo lineal clásico. Con la función `to_broom_names` de **tidybayes** podemos tener rápidamente nombres de columna idénticos a los que nos brinda el comando `tidy` de **broom**
+
+```{r}
+# Construimos el dataset de estimacion del modelo bayesiano
+tidy_bayesiano_multiple = regresion_bayesiana_multiple %>%
+  gather_draws(b_PTS, b_Age, b_TRB) %>%
+  mean_qi() %>%
+  to_broom_names() %>%
+  mutate(term = str_remove(term, "b_"),
+         modelo = "bayesiano")
+tidy_bayesiano_multiple
+```
+
+```{r}
+# Emprolijamos el dataset de estimacionn del modelo clásico
+tidy_clasico_multiple = coef_modelo_clasico_multiple %>% 
+                          filter(term!="(Intercept)") %>% 
+                          mutate(modelo="clasico")
+tidy_clasico_multiple
+```
+
+Concatenamos ambos datasets y seleccionamos las columnas de la estimación y los límites del intervalo de confianza
+
+```{r}
+bind_rows(tidy_clasico_multiple, tidy_bayesiano_multiple) %>% 
+  select(modelo, term, estimate, conf.low, conf.high) %>% 
+  arrange(term)
+```
+
+Podemos observar que tanto el valor estimado como  los límites de los intervalos son muy similares entre ambos modelos.
+
+# Experimentos
+
+En esta sección presentamos dos experimentos que muestran la importancia de realizar iteraciones de warmup en un modelo bayesiano
+
+## Sin warm-up
+
+¿Qué pasa con nuestro modelo si no realizamos warmup?
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_no_warmup <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  warmup = 0, # Seteamos el warmup en 0
+  cores = 6,
+  seed = 1992
+)
+```
+En el proceso ya nos aparecen varias advertencias indicando que el algoritmo/modelo parece haber divergido y que las medias y medianas que surgen de las distribuciones posteriores no son confiables.  
+
+Miremos el resumen del modelo:
+
+```{r}
+summary(regresion_bayesiana_no_warmup)
+```
+Observando el resumen vemos que los valores de **Rhat** son enormes, lo cual indica que el algoritmo no convergió. Además se observa que la media y los límites de los intervalos dan valores muy distintos a los que ya habíamos observado.
+
+Por último, veamos los gráficos de las distribuciones a posteriori y del proceso de muestreo
+
+```{r}
+plot(regresion_bayesiana_no_warmup, ask = FALSE)
+```
+
+## Poco warm-up
+
+¿Qué pasa con nuestro modelo si realizamos un warmup muy pequeño? En este caso, hagamos un warmup de solo 100 iteraciones
+
+```{r, echo=TRUE, results='hide'}
+regresion_bayesiana_poco_warmup <- brm(
+  formula = salario ~ PTS,
+  data = nba_salarios_estadisticas_partido,
+  warmup = 100,
+  cores = 6,
+  seed = 1992
+)
+```
+Nuevamente en el proceso ya nos aparecen varias advertencias indicando que el algoritmo/modelo parece haber divergido  y que las medias y medianas que surgen de las distribuciones posteriores no son confiables.
+
+Veamos el resumen del modelo:
+
+```{r}
+summary(regresion_bayesiana_poco_warmup)
+```
+Observando el resumen vemos que los valores de **Rhat** son grandes y superan al 1 en el caso de $\beta_0$ y $\beta_1$ mientras que para el caso de $\sigma$ el valor es igual a 1. Además, al igual que antes se observa que la media y los límites de los intervalos dan valores muy distintos a los que ya habíamos observado.
+
+Por último, veamos los gráficos de las distribuciones a posteriori y del proceso de muestreo
+
+```{r}
+plot(regresion_bayesiana_poco_warmup, ask = FALSE)
+```
+
