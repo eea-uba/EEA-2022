@@ -1,12 +1,15 @@
 ---
 title: "Regresión Logística"
-author: "Juan Barriola y Sofía Perini"
-date: "30 de Octubre de 2021"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "22 de Octubre de 2022"
 output:
   html_notebook:
     theme: spacelab
     toc: yes
     toc_float: yes
+    df_print: paged
+  html_document:
+    toc: yes
     df_print: paged
 ---
 <style type="text/css">
@@ -36,8 +39,12 @@ library(cowplot)
 library(OneR)
 library(rlang)
 library(caret)
-set.seed(2021)
 ```
+
+```{r}
+set.seed(2022)
+```
+
 
 ```{r, message=FALSE}
 # cargamos los datasets de train y test 
@@ -95,20 +102,22 @@ ggplot(distrib, aes(x = Survived, y = prop, fill = factor(Survived), label = pro
          geom_bar(stat="identity", position = "dodge") + facet_wrap(~ dataset) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(x = "Sobrevivientes", y = "Proporción en %", title = "Proporción de sobrevivientes por dataset") + 
+  guides(fill=guide_legend(title="Survived"))+
   theme_bw() +
   scale_fill_brewer(palette="Set1")
 ```
 
-Vemos que estamos trabajando con un problema de clasificación con cierto desbalance de clase, pero que la proporción se mantiene en ambos conjuntos de datos. 
+Vemos que estamos trabajando con un problema de clasificación con cierto desbalanceo de clase, pero que la proporción se mantiene en ambos conjuntos de datos. 
 
 Realizamos un gráfico exploratorio completo para ver el comportamiento y las relaciones entre las variables. El color rojo designa a quienes no sobrevivieron y el azul a los que sí.
 
 ```{r, message=FALSE, warning=FALSE, fig.width=8, fig.height=6, progress=FALSE}
 # graficamos con ggpairs coloreando por variable a predecir
 g <- dftitanic_train %>% 
+        mutate(Survived = factor(Survived)) %>%
         select("Survived","Pclass", "Sex", "Age", "Fare", "SibSp", "Parch") %>% 
         ggpairs(title = "Correlograma de variables",
-                mapping = aes(colour= factor(Survived)),
+                mapping = aes(colour= Survived),
                 progress = FALSE, 
                 lower=list(combo=wrap("facethist", binwidth=0.8))) +
         theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
@@ -130,7 +139,7 @@ g
 
 En este caso estamos modelando la probabilidad de la siguiente manera: 
 
-$P(X)= \beta_0 + \sum\limits_{j=1}^p \beta_j X$
+$P(X)= \beta_0 + \sum\limits_{j=1}^p \beta_j X_j$
 
 Veamos que tan bueno es el modelo lineal para esto, usando la edad como predictor.
 
@@ -162,7 +171,7 @@ Parece tener bastantes problemas para estimar la probabilidad de supervivencia d
 
 Para evitar estos problemas, usamos la **función logística**.
 
-$P(Y=1|X)= \frac{e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X}}{1+e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X}}$
+$P(Y=1|X)= \frac{e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X_j}}{1+e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X_j}}$
 
 El lado derecho se llama **expit**
 
@@ -170,7 +179,7 @@ Esta función acota el resultado entre 0 y 1, lo cual es mucho más adecuado par
 
 Luego de hacer algunas operaciones, podemos llegar a la expresión:
 
-$\log {\frac{P(x)}{1-P(x)}}= \beta_0 + \sum\limits_{j=1}^p \beta_j X$
+$\log {\frac{P(x)}{1-P(x)}}= \beta_0 + \sum\limits_{j=1}^p \beta_j X_j$
 
 El lado izquierdo es el logaritmo de los **odds** y se llama **logit**.
 
@@ -202,7 +211,7 @@ Se va a discutir sobre la interpretación de coeficientes y la evaluación en la
 
 ### Creación de fórmulas
 
-Para crear varios modoelos de regresión logística podemos utilizar la función `formulas` del paquete **modelr** para crear un objeto que contiene todas las fórmulas que vamos a utilizar. 
+Para crear varios modelos de regresión logística podemos utilizar la función `formulas` del paquete **modelr** para crear un objeto que contiene todas las fórmulas que vamos a utilizar. 
 
 En `.response` especificamos la variable respuesta de nuestras fórmulas y luego nombramos las fórmulas que queramos armar.
 
@@ -267,19 +276,19 @@ Se observa que ahora las variables ya no tienen una relación lineal con la prob
 
 **Modelo class**
 
-* β0 = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == '(Intercept)') %>% select(estimate))$estimate,5)` corresponde a personas que viajaron en primera clase.
+* $\hat{\beta_0}$ = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == '(Intercept)') %>% select(estimate))$estimate,5)` corresponde a personas que viajaron en primera clase.
 
-* β1 = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Pclass2') %>% select(estimate))$estimate,5)` y β2 = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Pclass3') %>% select(estimate))$estimate,5)` corresponden a personas que viajaron en la segunda y tercera clase, respectivamente. El coeficiente estimado en ambos casos fue negativo, indicando que la **probabilidad de supervivencia disminuye** en comparación con la primera clase.  Al ser más negativo el coeficiente estimado de Pclass3, se espera que la probabilidad de Supervivencia sea menor aún para esta clase que para un pasajero en clase 2.
+* $\hat{\beta_{Pclass2}}$ = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Pclass2') %>% select(estimate))$estimate,5)` y $\hat{\beta_{Pclass3}}$ = `r round((models %>% filter(models %in% c('class')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Pclass3') %>% select(estimate))$estimate,5)` corresponden a personas que viajaron en la segunda y tercera clase, respectivamente. El coeficiente estimado en ambos casos fue negativo, indicando que la **probabilidad de supervivencia disminuye** en comparación con la primera clase.  Al ser más negativo el coeficiente estimado de Pclass3, se espera que la probabilidad de Supervivencia sea menor aún para esta clase que para un pasajero en clase 2.
 
 **Modelo sex**
 
-* β0 = `r round((models %>% filter(models %in% c('sex')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == '(Intercept)') %>% select(estimate))$estimate,5)` corresponde a mujeres que viajaron a bordo del titanic.
+* $\hat{\beta_0}$ = `r round((models %>% filter(models %in% c('sex')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == '(Intercept)') %>% select(estimate))$estimate,5)` corresponde a mujeres que viajaron a bordo del titanic.
 
-* β1 = `r round((models %>% filter(models %in% c('sex')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Sexmale') %>% select(estimate))$estimate,5)` representa a los hombres que viajaron en el titanic e indica que **la probabilidad de supervivencia se reduce** en comparación a las mujeres.
+* $\hat{\beta_{SexMale}}$ = `r round((models %>% filter(models %in% c('sex')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Sexmale') %>% select(estimate))$estimate,5)` representa a los hombres que viajaron en el titanic e indica que **la probabilidad de supervivencia se reduce** en comparación a las mujeres.
 
 **Modelo age**
 
-* β1 = `r round((models %>% filter(models %in% c('age')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Age') %>% select(estimate))$estimate,5)` indica que la **probabilidad de supervivencia disminuye** por cada año más de edad de la persona.
+* $\hat{\beta_{Age}}$ = `r round((models %>% filter(models %in% c('age')) %>% mutate(tidy = map(mod, tidy)) %>%  unnest(tidy) %>% filter(term == 'Age') %>% select(estimate))$estimate,5)` indica que la **probabilidad de supervivencia disminuye** por cada año más de edad de la persona.
 
 ### ¿Qué pasaría en un modelo múltiple?
 
@@ -361,13 +370,13 @@ prediction_bad <- models %>%
 violin_full = ggplot(prediction_full, aes(x=Survived, y=.fitted, group=Survived, fill=factor(Survived))) + 
   geom_violin() +
   theme_bw() +
-  guides(scale="none") +
+  guides(scale="none", fill=guide_legend(title="Survived"))+
   labs(title='Violin plot', subtitle='Modelo completo', y='Predicted probability')
 # graficamos el modelo malo
 violin_bad = ggplot(prediction_bad, aes(x=Survived, y=.fitted, group=Survived, fill=factor(Survived))) + 
   geom_violin() + 
   theme_bw() +
-  guides(scale="none") +
+  guides(scale="none", fill=guide_legend(title="Survived"))+
   labs(title='Violin plot', subtitle='Modelo malo', y='Predicted probability')
 # mostramos ambos
 plot_grid(violin_bad, violin_full)
@@ -424,7 +433,7 @@ Hosmer_Lemeshow_plot <- function(dataset, predicted_column, class_column, bins, 
 }
 ```
 
-Generamos los gráficos pasandole lo parámetros. 
+Generamos los gráficos pasándole lo parámetros. 
 
 ```{r, message=FALSE, warning=FALSE}
 # modelo completo
