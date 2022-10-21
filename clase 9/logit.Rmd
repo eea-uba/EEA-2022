@@ -270,7 +270,7 @@ Observamos que todos los modelos tienen coeficientes significativos aunque el de
 
 Recordando la ecuación para modelar la probabilidad:
 
-$P(Y=1|X)= \frac{e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X}}{1+e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X}}$
+$P(Y=1|X)= \frac{e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X_j}}{1+e^{\beta_0 + \sum\limits_{j=1}^p \beta_j X_j}}$
 
 Se observa que ahora las variables ya no tienen una relación lineal con la probabilidad. En este modelo un coeficiente positivo indica que frente a aumentos de dicha variable la probabilidad aumenta, mientras que un coeficiente negativo nos indica lo contrario. Para nuestros modelos:
 
