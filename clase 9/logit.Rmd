@@ -107,7 +107,7 @@ ggplot(distrib, aes(x = Survived, y = prop, fill = factor(Survived), label = pro
   scale_fill_brewer(palette="Set1")
 ```
 
-Vemos que estamos trabajando con un problema de clasificación con cierto desbalanceo de clase, pero que la proporción se mantiene en ambos conjuntos de datos. 
+Vemos que estamos trabajando con un problema de clasificación con cierto desbalance de clase, pero que la proporción se mantiene en ambos conjuntos de datos. 
 
 Realizamos un gráfico exploratorio completo para ver el comportamiento y las relaciones entre las variables. El color rojo designa a quienes no sobrevivieron y el azul a los que sí.
 
@@ -562,9 +562,9 @@ table_test = table_test %>%
 confusionMatrix(table(table_test$predicted_class, table_test$Survived), positive = "1")
 ```
 
-Al existir desbalanceo de clases, es posible que el analista desee saber si la precisión general (Accuracy) de su modelo es mejor que la proporción de datos con la clase mayoritaria (No-information Rate). confusionMatrix usa la función binom.test para probar que la precisión (Acc) es mejor que la tasa sin información (NIR). Si el P-Value [Acc > NIR] resulta significativo, entonces podemos decir que existe evidencia estadísticamente significativa para decir que la precisión del modelo es mejor que la tasa sin información. 
+Al existir desbalance de clases, es posible que el analista desee saber si la precisión general (Accuracy) de su modelo es mejor que la proporción de datos con la clase mayoritaria (No-information Rate). confusionMatrix usa la función binom.test para probar que la precisión (Acc) es mejor que la tasa sin información (NIR). Si el P-Value [Acc > NIR] resulta significativo, entonces podemos decir que existe evidencia estadísticamente significativa para decir que la precisión del modelo es mejor que la tasa sin información. 
 
-## Desbalanceo de la clase
+## Desbalance de la clase
 
 Al explorar el dataset vimos que existía cierto desbalance de clase. Esto puede tener un efecto en las estimaciones del modelo y su clasificación final.
 
