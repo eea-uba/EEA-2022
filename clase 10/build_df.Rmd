@@ -12,55 +12,41 @@ library(tidyverse)
 ```
 
 ```{r}
-nba_total_stats = read_csv("nba_players_total_stats_2018-2019.csv") %>% 
-  map(~.x) %>%
-  discard(~all(is.na(.x))) %>%
-  map_df(~.x)
+nba_total_stats = read_csv("../fuentes/nba/estadisticas_2022.csv")  %>%
+  # Conservamos el primer tipo de posicion declarada
+  mutate(Pos = str_remove(string = Pos, pattern = "\\-.*"))
 
-nba_advanced_stats = read_csv("nba_players_advanced_stats_2018-2019.csv") %>% 
-  map(~.x) %>%
-  discard(~all(is.na(.x))) %>%
-  map_df(~.x)
+nba_advanced_stats = read_csv("../fuentes/nba/estadisticas_avanzadas_nba_2022.csv") %>%
+  # Conservamos el primer tipo de posicion declarada
+  mutate(Pos = str_remove(string = Pos, pattern = "\\-.*"))
 ```
 
 ```{r}
-nba_stats = nba_total_stats %>% inner_join(nba_advanced_stats)
+nba_stats = nba_total_stats %>%
+  inner_join(nba_advanced_stats)
 ```
 
-```{r}
-traded_players = nba_stats %>% group_by(Player) %>% count() %>% filter(n>1) %>% select(Player) %>% distinct()
 
-```
 
 ```{r}
-nba_stats_clean = nba_stats %>% 
-  filter((Player %in% traded_players$Player & Tm == "TOT")|!(Player %in% traded_players$Player))
-  
-```
-
-```{r}
-nba_salaries = read_csv("nba_players_salaries_2019-2020.csv")
+nba_salaries = read_csv("../fuentes/nba/salarios_nba_2023.csv")
 nba_salaries %>% glimpse()
 ```
 
 ```{r}
-nba_salaries = nba_salaries %>% 
-  mutate(salary = as.numeric(str_remove(string = `2019-20`, pattern = "\\$"))) 
-
-nba_salaries = nba_salaries %>% group_by(Player) %>% 
-  summarise(mean_salary_2019_2020= mean(salary)) 
+nba_salaries = nba_salaries %>% group_by(jugador) %>% 
+  summarise(salario= mean(salario)) 
 ```
 
 
 ```{r}
-nba_stats_salaries = nba_stats_clean %>% inner_join(nba_salaries, by="Player") %>% 
-  mutate(Player=str_remove(Player, "\\\\.*")) %>% 
-  select(-Rk)
+nba_stats_salaries = nba_stats %>% inner_join(nba_salaries, by="jugador") %>% 
+  mutate(jugador=str_remove(jugador, "\\\\.*"))
 ```
 
 
 ```{r}
-write_csv(nba_stats_salaries, " nba_player_stats_salary_2019_2020.csv")
+write_csv(nba_stats_salaries, "../fuentes/nba/nba_player_stats_salary_2022_2023.csv")
 ```
 
 
