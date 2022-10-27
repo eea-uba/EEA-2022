@@ -62,7 +62,24 @@ Existen 404 observaciones y 50 variables en el dataset.
 
 ### Gráfico de la relación entre la posición y el salario
 
-Veamos como es la distribución de salarios según la posición en el juego. Se agregan las etiquetas de los jugadores que cobran mayores sueldos. 
+Veamos como es la distribución de salarios según la posición en el juego. Se agregan las etiquetas de los jugadores que cobran mayores sueldos.
+
+Para contextualizar, en el basket 5 posiciones:
+
+![Fuente: www.chaseyoursport.com](posiciones_basket.jpg)
+
+
+
+* Point Guard (PG): conocido como base, se caracteriza por su habilidad para pasar y manejar la pelota y organizar las jugadas. Suelen ser personas de baja estatura en el equipo.
+
+* Shooting Guard (SG): conocido como escolta, se caracteriza por su habilidad para anotar de larga y media distancia. También suelen tener buenas habilidades de manejo y pase de la pelota.
+
+* Small Forward (SF): conocido como alero, se la considera la posición más versátil de todas. Se caracterizan por su capacidad de anotar puntos de maneras distintas (triples, tiros a distancia media y corta) y su capacidad atlética.
+
+* Power Forward (PF): conocido como ala pivot, se caracteriza por anotar desde un rango medio a corto y la defensa próxima al aro. Suelen ser jugadores altos pero con mayor flexibilidad que los pivots.
+
+* Center (C): conocido como pivot, se caracteriza por ser jugadores muy altos y jugar cerca del aro, motivo por el cual se destacan en en las anotaciones de 2 puntos, la toma de rebotes y bloqueos
+
 
 ```{r}
 top_players = nba %>% arrange(desc(salario)) %>% select(jugador) %>% slice(1:10) %>% pull()
