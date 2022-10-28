@@ -1,7 +1,7 @@
 ---
 title: 'Regularización: Lasso, Ridge y Elastic Net'
-author: "Juan Manuel Barriola y Sofia Perini"
-date: "6 de Noviembre de 2021"
+author: "Juan Manuel Barriola, Azul Villanueva y Franco Mastelli"
+date: "29 de Octubre de 2022"
 output:
   html_document:
     df_print: paged
@@ -18,19 +18,19 @@ div.main-container {
 }
 </style>
 
-```{r, echo=TRUE, message=FALSE, include=FALSE}
+```{r, echo=TRUE, message=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(GGally)
 library(cowplot)
 library(glmnet)
 library(RColorBrewer)
-set.seed(2021)
+set.seed(2022)
 ```
 
 # Planteo del Problema
 
-El problema que vamos a tratar de resolver es **predecir** el **salario** de un **jugador de la NBA** para la temporada 2019-2020 en base a sus estadísticas de juego durante la temporada 2018-2019.
+El problema que vamos a tratar de resolver es **predecir** el **salario** de un **jugador de la NBA** para la temporada 2022-2023 en base a sus estadísticas de juego durante la temporada 2021-2022.
 
 Las técnicas de **regularización** son útiles para trabajar con conjuntos con **gran cantidad de variables**, las cuales pueden introducir variabilidad en las estimaciones de los parámetros. 
 
@@ -48,31 +48,60 @@ diccionario
 En el glosario de [Basketball Reference](https://www.basketball-reference.com/about/glossary.html) pueden encontrar una descripción más exhaustiva de cada una de estas métricas.
 
 ```{r, message=FALSE}
-# Los datos de salario son para la temporada 2019-2020
-nba = read_csv(" nba_player_stats_salary_2019_2020.csv") %>% 
-  rename(salary = mean_salary_2019_2020) %>% 
+# Los datos de salario son para la temporada 2022-2023
+nba = read_csv("../fuentes/nba/nba_player_stats_salary_2022_2023.csv") %>%
   mutate(Pos = str_remove(string = Pos, pattern = "\\-.*")) %>% 
   mutate_all(~replace(., is.na(.), 0))
 
 glimpse(nba)
 ```
 
-Existen 395 observaciones y 50 variables en el dataset.
+Existen 404 observaciones y 50 variables en el dataset.
 
 ## Análisis Exploratorio
 
 ### Gráfico de la relación entre la posición y el salario
 
-Veamos como es la distribución de salarios según la posición en el juego. Se agregan las etiquetas de los jugadores que cobran mayores sueldos. 
+Veamos como es la distribución de salarios según la posición en el juego. Se agregan las etiquetas de los jugadores que cobran mayores sueldos.
+
+Para contextualizar, en el basket 5 posiciones:
+
+![Fuente: www.chaseyoursport.com](posiciones_basket.jpg){width=50%}
+
+
+
+
+* **Point Guard (PG)**: conocido como base, se caracteriza por su habilidad para pasar y manejar la pelota y organizar las jugadas. Suelen ser personas de baja estatura en el equipo.
+
+* **Shooting Guard (SG)**: conocido como escolta, se caracteriza por su habilidad para anotar de larga y media distancia. También suelen tener buenas habilidades de manejo y pase de la pelota.
+
+* **Small Forward (SF)**: conocido como alero, se la considera la posición más versátil de todas. Se caracterizan por su capacidad de anotar puntos de maneras distintas (triples, tiros a distancia media y corta) y su capacidad atlética.
+
+* **Power Forward (PF)**: conocido como ala pivot, se caracteriza por anotar desde un rango medio a corto y la defensa próxima al aro. Suelen ser jugadores altos pero con mayor flexibilidad que los pivots.
+
+* **Center (C)**: conocido como pivot, se caracteriza por ser jugadores muy altos y jugar cerca del aro, motivo por el cual se destacan en en las anotaciones de 2 puntos, la toma de rebotes y bloqueos.
+
 
 ```{r}
-top_players = c("James Harden", "Stephen Curry", "Blake Griffin", "Chris Paul", "LeBron James", "Klay Thompson", "Jimmy Butler", "Gordon Hayward", "Kyle Lowry")
-ggplot(nba, aes(Pos, salary, fill=Pos)) +
+top_player_by_pos = nba %>% 
+  group_by(Pos) %>%
+  filter(salario == max(salario)) %>%
+  ungroup() %>%
+  select(jugador) %>%
+  pull()
+
+print(top_player_by_pos)
+```
+
+```{r}
+ggplot(nba, aes(Pos, salario, fill=Pos)) +
   geom_boxplot() +
-  geom_text(aes(label=ifelse((salary>30500000) & Player %in% top_players,as.character(Player),'')),hjust=1.1,vjust=0, size=3) +
+  geom_text(aes(label=ifelse((salario>30500000) & jugador %in% top_player_by_pos,as.character(jugador),'')),vjust="inward",hjust="inward", size=3) +
   theme_bw() +
   labs(title= "Boxplots: salarios y posición de juego", x="Posición", y="Salario")
+
 ```
+
 
 Observamos que la distribución varía un poco entre posiciones y hay varios jugadores que son outliers según el criterio de Tukey.
 
@@ -97,7 +126,7 @@ Seleccionamos algunas variables y vemos sus relaciones usando `ggpairs`.
 
 ```{r fig3, fig.height = 8, fig.width = 12, fig.align = "center", message=FALSE}
 nba %>% 
-  select(salary, Age, PTS, GS, DRB, TRB, AST, BLK, Pos) %>% 
+  select(salario, Age, PTS, GS, DRB, TRB, AST, BLK, Pos) %>% 
   ggpairs(aes(color = Pos), upper = list(continuous = wrap("cor", size = 3, hjust=0.5)), progress=FALSE) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1), legend.position = "bottom") + 
   theme_bw()
@@ -117,11 +146,11 @@ Creamos el modelo y accedemos a información de los coeficientes e intervalos us
 
 ```{r}
 # Eliminamos jugador y equipo
-nba = nba %>% select(-c(Player, Tm)) 
+nba = nba %>% select(-c(jugador, Tm)) 
 # Modelo lineal
-modelo_lineal = nba %>% lm(formula = salary~., data = .)
+modelo_lineal = nba %>% lm(formula = salario~., data = .)
 #Coeficientes
-lineal_coef= modelo_lineal %>% tidy(conf.int=TRUE)
+lineal_coef = modelo_lineal %>% tidy(conf.int=TRUE)
 ```
 
 Graficamos los coeficientes estimados. 
@@ -155,7 +184,7 @@ Notamos que:
 
 * Hay ciertos coeficientes estimados que presentan una gran variabilidad pero la escala de las variables puede ocultarnos la verdadera variabilidad de los estimadores.
 
-* Pocas variables tienen coeficientes significativos: **TOV%**, **G** y **Age**.
+* Pocas variables tienen coeficientes significativos: **BLK**, **G** y **Age**.
 
 * Existen cuatro variables cuyo coeficiente estimado es NA: **2P**, **2PA**, **PTS** y **TRB**.
 
@@ -171,7 +200,7 @@ Para evitar los problemas que puede introducir la escala, reescalamos las variab
 # Reescalamos las variables numericas
 nba_scaled = nba %>% mutate_at(vars(-Pos), scale)
 # Nuevo modelo lineal 
-modelo_lineal_scal = nba_scaled %>% lm(formula = salary~., data = .)
+modelo_lineal_scal = nba_scaled %>% lm(formula = salario~., data = .)
 lineal_coef_scal = modelo_lineal_scal %>% tidy(conf.int=TRUE)
 
 lineal_coef_scal %>% filter(!is.na(estimate)) %>% 
@@ -197,7 +226,7 @@ lineal_coef_scal %>% filter(!is.na(estimate)) %>%
 Ahora observamos que: 
 
 * Los coeficientes cambian de valor.
-* Las mismas cuatro variables tienen coeficientes significativos: **TOV%**, **G** y **Age**.
+* Las mismas tres variables tienen coeficientes significativos: **BLK**, **G** y **Age**.
 * Las mismas cuatro variables tienen coeficiente estimado NA: **2P**, **2PA**, **PTS** y **TRB**.
 
 
@@ -223,9 +252,10 @@ La libreria `glmnet` nos permite trabajar con modelos ridge, lasso y elastic net
 
 Fórmula:
 
-$ECM + \lambda{[\alpha\sum_{j}|\beta_j| +(1-\alpha)\sum_{j}\beta_j^2]}$
+$ECM + \lambda{\left[\alpha\sum_{j}|\beta_j| +(1-\alpha)\sum_{j}\beta_j^2\right]}$
 
-$\lambda$ controla toda la penalidad, mientras que $\alpha$ controla la penalidad de la elastic net y tiende un puente entre Lasso y Ridge. 
+* $\lambda$ regula la importancia de la penalidad total.
+* $\alpha$ controla la importancia relativa de la regularización L1 y L2 y sirve para indicar si deseamos realizar un modelo de tipo Lasso, Ridge o Elastic Net.
 
 Con el parámetro $\alpha$ indicamos con qué tipo de modelo deseamos trabajar:
 
@@ -256,14 +286,14 @@ En este caso vamos a trabajar con $\alpha = 1$.
 
   2) ¿Cómo impacta esto en las variables? Veamos con un ejemplo. 
   
-La función `model.matrix` crea una matriz de diseño a partir de la fórmula definida en el argumento, convirtiendo variables caracter o factor en un conjunto de variables dummy. Toma como input un objeto o formula de modelo y un dataset. Después de la coerción, todas las variables utilizadas en el lado derecho de la fórmula deben ser lógicas, enteras, numéricas o factores.
+La función `model.matrix` crea una matriz de diseño a partir de la fórmula definida en el argumento, convirtiendo variables caracter o factor en un conjunto de variables dummy. Toma como input un objeto o fórmula de modelo y un dataset. Después de la coerción, todas las variables utilizadas en el lado derecho de la fórmula deben ser lógicas, enteras, numéricas o factores.
 
 ```{r}
 head(train)
 # Vector con los salarios
-nba_salary = train$salary
+nba_salary = train$salario
 # Matriz con los regresores
-nba_mtx = model.matrix(salary~., data = train)
+nba_mtx = model.matrix(salario~., data = train)
 dim(nba_mtx)
 head(nba_mtx)
 ```
@@ -331,7 +361,7 @@ Veamos un poco mejor aquellas variables que sobreviven para mayores valores de l
 ```{r}
 # Seleccionamos los terminos que sobreviven para valores altos de lambda
 terminos_sobrevientes = lasso_coef %>% 
-  filter(log(lambda)>16.5, term != "(Intercept)") %>%
+  filter(log(lambda)>17, term != "(Intercept)") %>%
   select(term) %>% 
   distinct() %>% 
   pull()
@@ -510,7 +540,7 @@ lasso_opt %>% tidy()
 lasso_opt %>% glance()
 ```
 
-Han quedado 14 variables y el modelo explica el 62,1% de la deviance.
+Han quedado 21 variables y el modelo explica el 75,2% de la deviance.
 
 ## Ridge
 
@@ -603,7 +633,7 @@ ridge_opt
 # Tidy
 ridge_opt %>% tidy() %>% mutate(estimate = round(estimate, 4))
 ```
-En este caso conserva todas las variables, obteniendo un porcentaje de deviance explicado muy similar a Lasso: 62,5%.
+En este caso conserva todas las variables, obteniendo un porcentaje de deviance explicado muy similar a Lasso: 74,7%.
 
 ## Elastic Net
 
@@ -632,7 +662,6 @@ elastic_coef
 plot(elastic.mod, 'lambda')
 ```
 
-¿Qué ven en este gráfico de distinto a los dos anteriores?
 
 ```{r}
 # Gráfico de coeficientes en función del lambda con intercepto
@@ -731,7 +760,7 @@ augment_glmnet = function(df, y, model) {
   data_matrix = model.matrix(formula, data = df)
   # predicciones 
   predictions = predict(model, data_matrix)
-  pred_colname = str_c("predicted", y, sep = "_")
+  pred_colname = str_c(y, "predicho", sep = "_")
   df[pred_colname] = predictions
   return(df)
 }
@@ -741,18 +770,18 @@ Vamos a agregar dos modelos para comparar: el salario promedio del set de entren
 
 ```{r}
 # Salario promedio del set de entrenamiento
-salario_promedio = mean(train$salary)
+salario_promedio = mean(train$salario)
 # Modelo lineal
-modelo_lineal = lm(salary~., data = train)
+modelo_lineal = lm(salario~., data = train)
 ```
 
 Realizamos las predicciones ambos modelos.
 
 ```{r}
 # Salario promedio
-prediccion_modelo_nulo = tibble(salary = train$salary, predicted_salary = salario_promedio)
+prediccion_modelo_nulo = tibble(salario = train$salario, salario_predicho = salario_promedio)
 # Predicciones del modelo lineal 
-prediccion_modelo_lineal = augment(modelo_lineal) %>% mutate(predicted_salary = .fitted) %>% select(salary, predicted_salary)
+prediccion_modelo_lineal = augment(modelo_lineal) %>% mutate(salario_predicho = .fitted) %>% select(salario, salario_predicho)
 ```
 
 Realizamos las predicciones de los modelos de glmnet.
@@ -764,7 +793,7 @@ modelos_glmnet = list(lasso = lasso_opt, ridge = ridge_opt, elastic = elastic_op
 lista_predicciones_training = map(.x = modelos_glmnet, 
                                   .f = augment_glmnet, 
                                   df = train, 
-                                  y = "salary")
+                                  y = "salario")
 # Agregamos las otras predicciones a la lista 
 lista_predicciones_training = lista_predicciones_training %>%
   prepend(list(nulo = prediccion_modelo_nulo, lineal = prediccion_modelo_lineal))
@@ -775,8 +804,8 @@ Obtenemos el RMSE para el set de **entrenamiento**.
 ```{r}
 map_dfr(.x = lista_predicciones_training, 
         .f = rmse, 
-        truth = "salary", 
-        estimate = "predicted_salary", 
+        truth = "salario", 
+        estimate = "salario_predicho", 
         .id = "modelo")
 ```
 
@@ -786,22 +815,22 @@ Obtenemos el RMSE para los modelos en el set de **evaluación**
 
 ```{r, warning=FALSE}
 # Predicción del promedio
-prediccion_modelo_nulo = tibble(salary = test$salary, predicted_salary = salario_promedio)
+prediccion_modelo_nulo = tibble(salario = test$salario, salario_predicho = salario_promedio)
 # Predicción modelo lineal 
 prediccion_modelo_lineal = augment(modelo_lineal, newdata = test) %>%
-  mutate(predicted_salary = .fitted)
+  mutate(salario_predicho = .fitted)
 # Predicciones glmnet
 lista_predicciones_test = map(.x = modelos_glmnet, 
                               .f = augment_glmnet, 
                               df = test, 
-                              y = "salary")
+                              y = "salario")
 # Lista completa de predicciones
 lista_predicciones_test = lista_predicciones_test %>% prepend(list(nulo=prediccion_modelo_nulo, lineal = prediccion_modelo_lineal))
 # RMSE en el set de evaluación
 map_dfr(lista_predicciones_test, 
         rmse, 
-        truth = "salary", 
-        estimate = "predicted_salary", 
+        truth = "salario", 
+        estimate = "salario_predicho", 
         .id = "modelo")
 ```
 ¿Cuál es el modelo de mejor performance en el set de evaluación? ¿Qué sucedió con el modelo de regresión clásico?

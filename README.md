@@ -138,8 +138,7 @@ Regularización: modelos Ridge, Lasso y Elastic Net y trade off sesgo-varianza
 
 #### Datasets para técnicas de regularización
 
-- [Diccionario de términos NBA](clase 10/diccionario_terminos.csv)
-- [Datos de estádisticas de juego de la NBA](clase 10/ nba_player_stats_salary_2019_2020.csv)
+- [Datos de estádisticas de juego de la NBA](fuentes/nba/nba_player_stats_salary_2022_2023.csv)
 
 ### Clase 12: 05-11
 
