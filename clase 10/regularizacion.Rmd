@@ -18,7 +18,7 @@ div.main-container {
 }
 </style>
 
-```{r, echo=TRUE, message=FALSE, include=FALSE}
+```{r, echo=TRUE, message=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(GGally)
@@ -66,31 +66,37 @@ Veamos como es la distribución de salarios según la posición en el juego. Se 
 
 Para contextualizar, en el basket 5 posiciones:
 
-![Fuente: www.chaseyoursport.com](posiciones_basket.jpg)
+![Fuente: www.chaseyoursport.com](posiciones_basket.jpg){width=50%}
 
 
 
-* Point Guard (PG): conocido como base, se caracteriza por su habilidad para pasar y manejar la pelota y organizar las jugadas. Suelen ser personas de baja estatura en el equipo.
 
-* Shooting Guard (SG): conocido como escolta, se caracteriza por su habilidad para anotar de larga y media distancia. También suelen tener buenas habilidades de manejo y pase de la pelota.
+* **Point Guard (PG)**: conocido como base, se caracteriza por su habilidad para pasar y manejar la pelota y organizar las jugadas. Suelen ser personas de baja estatura en el equipo.
 
-* Small Forward (SF): conocido como alero, se la considera la posición más versátil de todas. Se caracterizan por su capacidad de anotar puntos de maneras distintas (triples, tiros a distancia media y corta) y su capacidad atlética.
+* **Shooting Guard (SG)**: conocido como escolta, se caracteriza por su habilidad para anotar de larga y media distancia. También suelen tener buenas habilidades de manejo y pase de la pelota.
 
-* Power Forward (PF): conocido como ala pivot, se caracteriza por anotar desde un rango medio a corto y la defensa próxima al aro. Suelen ser jugadores altos pero con mayor flexibilidad que los pivots.
+* **Small Forward (SF)**: conocido como alero, se la considera la posición más versátil de todas. Se caracterizan por su capacidad de anotar puntos de maneras distintas (triples, tiros a distancia media y corta) y su capacidad atlética.
 
-* Center (C): conocido como pivot, se caracteriza por ser jugadores muy altos y jugar cerca del aro, motivo por el cual se destacan en en las anotaciones de 2 puntos, la toma de rebotes y bloqueos
+* **Power Forward (PF)**: conocido como ala pivot, se caracteriza por anotar desde un rango medio a corto y la defensa próxima al aro. Suelen ser jugadores altos pero con mayor flexibilidad que los pivots.
+
+* **Center (C)**: conocido como pivot, se caracteriza por ser jugadores muy altos y jugar cerca del aro, motivo por el cual se destacan en en las anotaciones de 2 puntos, la toma de rebotes y bloqueos.
 
 
 ```{r}
-top_players = nba %>% arrange(desc(salario)) %>% select(jugador) %>% slice(1:10) %>% pull()
+top_player_by_pos = nba %>% 
+  group_by(Pos) %>%
+  filter(salario == max(salario)) %>%
+  ungroup() %>%
+  select(jugador) %>%
+  pull()
 
-print(top_players)
+print(top_player_by_pos)
 ```
 
 ```{r}
 ggplot(nba, aes(Pos, salario, fill=Pos)) +
   geom_boxplot() +
-  geom_text(aes(label=ifelse((salario>30500000) & jugador %in% top_players,as.character(jugador),'')),hjust=1.1,vjust=0, size=3) +
+  geom_text(aes(label=ifelse((salario>30500000) & jugador %in% top_player_by_pos,as.character(jugador),'')),vjust="inward",hjust="inward", size=3) +
   theme_bw() +
   labs(title= "Boxplots: salarios y posición de juego", x="Posición", y="Salario")
 
@@ -220,7 +226,7 @@ lineal_coef_scal %>% filter(!is.na(estimate)) %>%
 Ahora observamos que: 
 
 * Los coeficientes cambian de valor.
-* Las mismas cuatro variables tienen coeficientes significativos: **BLK**, **G** y **Age**.
+* Las mismas tres variables tienen coeficientes significativos: **BLK**, **G** y **Age**.
 * Las mismas cuatro variables tienen coeficiente estimado NA: **2P**, **2PA**, **PTS** y **TRB**.
 
 
@@ -248,7 +254,8 @@ Fórmula:
 
 $ECM + \lambda{\left[\alpha\sum_{j}|\beta_j| +(1-\alpha)\sum_{j}\beta_j^2\right]}$
 
-$\lambda$ controla toda la penalidad, mientras que $\alpha$ controla la penalidad de la elastic net y tiende un puente entre Lasso y Ridge. 
+* $\lambda$ regula la importancia de la penalidad total.
+* $\alpha$ controla la importancia relativa de la regularización L1 y L2 y sirve para indicar si deseamos realizar un modelo de tipo Lasso, Ridge o Elastic Net.
 
 Con el parámetro $\alpha$ indicamos con qué tipo de modelo deseamos trabajar:
 
@@ -354,7 +361,7 @@ Veamos un poco mejor aquellas variables que sobreviven para mayores valores de l
 ```{r}
 # Seleccionamos los terminos que sobreviven para valores altos de lambda
 terminos_sobrevientes = lasso_coef %>% 
-  filter(log(lambda)>16.5, term != "(Intercept)") %>%
+  filter(log(lambda)>17, term != "(Intercept)") %>%
   select(term) %>% 
   distinct() %>% 
   pull()
@@ -655,7 +662,6 @@ elastic_coef
 plot(elastic.mod, 'lambda')
 ```
 
-¿Qué ven en este gráfico de distinto a los dos anteriores?
 
 ```{r}
 # Gráfico de coeficientes en función del lambda con intercepto
