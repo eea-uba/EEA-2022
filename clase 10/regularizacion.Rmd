@@ -540,7 +540,7 @@ lasso_opt %>% tidy()
 lasso_opt %>% glance()
 ```
 
-Han quedado 19 variables y el modelo explica el 74% de la deviance.
+Han quedado 21 variables y el modelo explica el 75,2% de la deviance.
 
 ## Ridge
 
@@ -633,7 +633,7 @@ ridge_opt
 # Tidy
 ridge_opt %>% tidy() %>% mutate(estimate = round(estimate, 4))
 ```
-En este caso conserva todas las variables, obteniendo un porcentaje de deviance explicado muy similar a Lasso: 73,6%.
+En este caso conserva todas las variables, obteniendo un porcentaje de deviance explicado muy similar a Lasso: 74,7%.
 
 ## Elastic Net
 
