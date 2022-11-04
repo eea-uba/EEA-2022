@@ -1,11 +1,14 @@
 ---
-title: "GAM en series de tiempo: Prophet"
-output: 
-  html_notebook: 
+title: 'GAM en series de tiempo: Prophet'
+author: "Juan Manuel Barriola, Azul Villanueva y Franco Mastelli"
+date: "05 de Noviembre de 2022"
+output:
+  html_document:
+    toc: yes
+    df_print: paged
+  html_notebook:
     toc: yes
     toc_float: yes
-author: "Juan Manuel Barriola y Sofia Perini"
-date: "13 de Noviembre de 2021"
 ---
 
 <style type="text/css">
@@ -46,11 +49,11 @@ Se observa que la serie de tiempo presenta un comportamiento cíclico con alguno
 * Caídas por cierre del local o caídas del sistema de medición
 
 ```{r}
-ggplot(shopping, aes(Dia, visitantes)) + geom_line() + theme_bw() + labs(title='Visitantes por dia')
+ggplot(shopping, aes(Dia, visitantes)) + geom_line() + theme_bw() + labs(title='Visitantes por día')
 ```
 
 ```{r}
-ggplot(shopping, aes(Dia, visitantes)) + geom_line() + geom_point(color='forestgreen') + theme_bw() + labs(title='Visitantes por dia')
+ggplot(shopping, aes(Dia, visitantes)) + geom_line() + geom_point(color='forestgreen') + theme_bw() + labs(title='Visitantes por día')
 ```
 
 # Técnicas de suavizado
@@ -60,7 +63,7 @@ Una primera aproximación puede ser tratar de utilizar técnicas de suavizado.
 En este caso estamos utilizando **loess** como una herramienta gráfica con el comando `geom_smooth()` de ggplot.
 
 ```{r}
-ggplot(shopping, aes(Dia, visitantes)) + geom_point(color='forestgreen') + geom_smooth() + theme_bw() + labs(title='Visitantes por dia: Suavizado')
+ggplot(shopping, aes(Dia, visitantes)) + geom_point(color='forestgreen') + geom_smooth() + theme_bw() + labs(title='Visitantes por día: Suavizado')
 ```
 
 Si bien está suavizando, el resultado es bastante pobre ya que el modelo no está logrando representar bien la variabilidad de los datos.
@@ -130,7 +133,7 @@ prophet_df = shopping %>% select(Dia, visitantes) %>% rename(., ds=Dia, y=visita
 
 El modelo subyacente es el propuesto por Harvey & Peters (1990): 
 
-$y(t)=g(t)+s(t)+h(t)+\epsilon_t$
+$y(t)=g(t)+s(t)+h(t)+\varepsilon_t$
 
  * $y(t):$ variable a predecir
 
@@ -140,7 +143,7 @@ $y(t)=g(t)+s(t)+h(t)+\epsilon_t$
 
  * $h(t):$fectos de vacaciones (eventos atípicos)$
 
- * $ε_t:$error
+ * $\varepsilon_t:$error
 
 El modelo es similar a los GAM:
 
@@ -182,7 +185,7 @@ Notemos que el modelo automáticamente deshabilita la estacionalidad anual y dia
 
 Llamando a `plot` obtenemos el valor predicho del modelo y el valor original.
 
-Es difícil de notar pero el modelo realiza predicciones aun para los dias en los cuales no hay datos.
+Es difícil de notar pero el modelo realiza predicciones aun para los días en los cuales no hay datos.
 
 ```{r}
 plot(prophet_base,fcst=predict(prophet_base, prophet_df)) +theme_bw()
@@ -239,7 +242,7 @@ Notemos que la tendencia y estacionalidad semanal se mantiene y ahora se agrega 
 
 ### Modelo completo 
 
-Como último paso vamos a agregar las ventas de navidad y ciertos dias de promociones como eventos especiales.
+Como último paso vamos a agregar las ventas de navidad y ciertos días de promociones como eventos especiales.
 
 #### Dataframe de eventos
 
@@ -328,7 +331,7 @@ Realicemos la evaluación para nuestros modelos
 
 ### Modelo básico
 
-Usamos `cross_validation` con un periodo inicial de 45 días, un horizonte de 15 días y desplazaremos la predicción cada 7 días
+Usamos `cross_validation` con un período inicial de 45 días, un horizonte de 15 días y desplazaremos la predicción cada 7 días
 
 ```{r}
 cv_base = cross_validation(prophet_base, initial = 45, period = 7, horizon = 15, units = 'days')
@@ -424,7 +427,7 @@ performance_metrics(cv_mensual, rolling_window = 0.25)
 
 ### Modelo completo
 
-Usamos `cross_validation` con un periodo inicial de 45 días, un horizonte de 15 días y desplazaremos la predicción cada 7 días
+Usamos `cross_validation` con un período inicial de 45 días, un horizonte de 15 días y desplazaremos la predicción cada 7 días
 
 ```{r}
 cv_full = cross_validation(prophet_full, initial = 45, period = 7, horizon = 15, units = 'days')
@@ -465,4 +468,4 @@ dyplot.prophet(prophet_full, fcst=predict(prophet_full, prophet_df))
   * Github: https://github.com/facebook/prophet
   * Paper: https://peerj.com/preprints/3190.pdf
   * Blog: https://research.fb.com/prophet-forecasting-at-scale/
-  * Documentacion: https://facebook.github.io/prophet/docs/
+  * Documentación: https://facebook.github.io/prophet/docs/
