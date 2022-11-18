@@ -1,0 +1,184 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Fully connected Neural Network
+
+Las redes neuronales densas (**Fully Connected Neural Networks**) son un tipo de red neuronal artificial donde todas las neuronas de una capa (**layer**) se encuentran conectadas con todas las neuronas de la capa siguiente.
+
+Este tipo de redes neuronales se caracterizan por ser "agnósticas de la estructura o del input" (**structure agnostic**) ya que no es necesario realizar supuestos o tratamientos especiales a los datos de input de la red.
+
+Veamos la arquitectura de una red densa:
+
+
+## Keras
+
+Vamos a utilizar la librería [__KERAS__](https://keras.rstudio.com/)
+
+### Instalación
+
+Keras utiliza como backend __TensorFlow__. Para poner todo en funcionamiento necesitamos instalar ambas cosas, la secuencia de pasos es:
+
+1. `install.packages("keras")`
+2. `library(keras)`
+3. `install_keras()`
+
+La función `install_keras()` realiza una instalación por default de basada en el CPU. Es posible realizar una instalación para trabajar con  GPU.
+Para una forma de instalación más completa y flexible se pueden seguir las instrucciones del siguiente link: [Instalación Tensorflow R](https://tensorflow.rstudio.com/install/index.html) 
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(keras)
+library(tensorflow)
+# Chequeamos que la instalación de keras y tensorflow sea correcta
+tf$constant("Aguante Tensorflow!")
+```
+
+
+##
+
+```{r}
+# levantamos dataset preprocesado
+datos_properati <- read.csv("../clase 6/properati_preprocesado_2022.csv")
+# creamos nueva variable de superficie descubierta
+datos_properati = datos_properati %>%
+  mutate(surface_uncovered = surface_total - surface_covered) %>% 
+  select(-c(id, surface_total, precio_en_miles))
+```
+
+```{r}
+datos_properati %>% glimpse()
+```
+
+## Modelo lineal
+
+```{r}
+# fijamos semilla
+set.seed(22)
+# Partición Train y Test, indicando proporción
+split_modelo_lineal <- initial_split(datos_properati, prop = 0.75)
+train_modelo_lineal <- training(split_modelo_lineal)
+test_modelo_lineal <- testing(split_modelo_lineal)
+```
+
+```{r}
+modelo_lineal_multiple <- lm(formula = price ~., data = train_modelo_lineal)
+```
+
+```{r}
+prediccion_test_modelo_multiple = augment(modelo_lineal_multiple, newdata = test_modelo_lineal) 
+```
+
+
+
+```{r}
+metrics(prediccion_test_modelo_multiple, estimate = .fitted, truth=price)
+```
+
+
+## Redes
+
+```{r}
+library(recipes)
+properati_redes <- recipe(price ~ ., datos_properati) %>%
+  step_dummy(property_type, one_hot = TRUE) %>%
+  step_dummy(l3, one_hot = TRUE) %>%
+  prep() %>%
+  bake(new_data = NULL)
+```
+
+
+```{r}
+# fijamos semilla
+set.seed(22)
+# Partición Train y Test, indicando proporción
+split_redes <- initial_split(properati_redes, prop = 0.75)
+train_redes <- training(split_redes)
+test_redes <- testing(split_redes)
+```
+
+
+```{r}
+variables_train <- train_redes %>% select(-price)
+variables_test <- test_redes %>% select(-price)
+
+precio_train <- train_redes %>% select(price)
+precio_test <- test_redes %>% select(price)
+```
+
+### Normalización
+
+```{r, warning=FALSE}
+normalizer <- layer_normalization(axis = -1L)
+
+normalizer %>% adapt(as.matrix(variables_train))
+
+normalizer$mean
+```
+
+
+
+```{r}
+red_modelo_lineal <- keras_model_sequential() %>%
+  normalizer() %>%
+  layer_dense(units = 1)
+
+red_modelo_lineal
+```
+
+Una lista de las funciones de pérdida se encuentra en: [Funciones de pérdida de Tensorflow](https://tensorflow.rstudio.com/reference/keras/loss-functions.html#loss-functions-1)
+
+```{r}
+red_modelo_lineal %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.1),
+  loss = 'mean_squared_error'
+)
+
+red_modelo_lineal
+```
+
+
+```{r}
+historia <- red_modelo_lineal %>% fit(
+  as.matrix(variables_train),
+  as.matrix(precio_train),
+  epochs = 500,
+  # Suppr#ess logging.
+ # verbose = 0,
+  # Calculate validation results on 20% of the training data.
+  validation_split = 0.2
+)
+```
+
+
+```{r}
+test_results <- list()
+test_results[['linear_model']] <- red_modelo_lineal %>%
+  evaluate(
+    as.matrix(variables_test),
+    as.matrix(precio_test),
+    #verbose = 0
+  )
+```
+
+```{r}
+sqrt(test_results$linear_model)
+```
+
+
+```{r}
+y_pred <- predict(red_modelo_lineal, as.matrix(variables_test))
+```
+
+```{r}
+rmse_vec(truth = precio_test$price , estimate = c(y_pred))
+```
+
+```{r}
+ggplot(data.frame(pred = as.numeric(y_pred), precio = precio_test$price)) +
+  geom_point(aes(x = pred, y = precio)) +
+  geom_abline(intercept = 0, slope = 1, color = "blue")
+```
+
