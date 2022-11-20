@@ -5,6 +5,9 @@ output: html_notebook
 
 # Fully connected Neural Network
 
+
+Esta clase se encuentra basada en el [tutorial de regresión de Tensorflow para R](https://tensorflow.rstudio.com/tutorials/keras/regression)
+
 Las redes neuronales densas (**Fully Connected Neural Networks**) son un tipo de red neuronal artificial donde todas las neuronas de una capa (**layer**) se encuentran conectadas con todas las neuronas de la capa siguiente.
 
 Este tipo de redes neuronales se caracterizan por ser "agnósticas de la estructura o del input" (**structure agnostic**) ya que no es necesario realizar supuestos o tratamientos especiales a los datos de input de la red.
@@ -64,17 +67,35 @@ test_modelo_lineal <- testing(split_modelo_lineal)
 ```
 
 ```{r}
+ggplot(train_modelo_lineal, aes(surface_covered, price)) +
+  geom_point()
+```
+
+
+```{r}
+# Entrenamos un modelo simple
+modelo_lineal_simple <- lm(formula = price ~ surface_covered, data = train_modelo_lineal)
+
+# Entrenamos un modelo multiple
 modelo_lineal_multiple <- lm(formula = price ~., data = train_modelo_lineal)
 ```
 
 ```{r}
-prediccion_test_modelo_multiple = augment(modelo_lineal_multiple, newdata = test_modelo_lineal) 
+modelos_lineales = list(modelo_lineal_simple = modelo_lineal_simple, modelo_lineal_multiple = modelo_lineal_multiple)
+
+lista_predicciones_training = map(.x = modelos_lineales, .f = augment) 
+
+map_dfr(.x = lista_predicciones_training, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
+        arrange(.estimate) %>% 
+        mutate(.estimate= round(.estimate, digits = 2))
 ```
 
-
-
 ```{r}
-metrics(prediccion_test_modelo_multiple, estimate = .fitted, truth=price)
+lista_predicciones_testing = map(.x = modelos_lineales, .f = augment, newdata = test_modelo_lineal) 
+
+map_dfr(.x = lista_predicciones_testing, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
+        arrange(.estimate) %>% 
+        mutate(.estimate= round(.estimate, digits = 2))
 ```
 
 
@@ -91,8 +112,6 @@ properati_redes <- recipe(price ~ ., datos_properati) %>%
 
 
 ```{r}
-# fijamos semilla
-set.seed(22)
 # Partición Train y Test, indicando proporción
 split_redes <- initial_split(properati_redes, prop = 0.75)
 train_redes <- training(split_redes)
@@ -117,6 +136,93 @@ normalizer %>% adapt(as.matrix(variables_train))
 
 normalizer$mean
 ```
+## Red sencilla
+
+```{r}
+superficie_cub_entrenamiento <- matrix(variables_train$surface_covered)
+normalizador_superficie <- layer_normalization(input_shape = shape(1), axis = NULL)
+normalizador_superficie %>% adapt(superficie_cub_entrenamiento)
+```
+
+
+```{r}
+red_superficie_cubierta <- keras_model_sequential() %>%
+  normalizador_superficie() %>%
+  layer_dense(units = 1)
+
+summary(red_superficie_cubierta)
+```
+
+Para compilar la red es necesario definir:
+
+* `optimizer`: el método de optimización
+
+* `loss`: la función de costo/pérdida
+
+
+
+
+```{r}
+red_superficie_cubierta %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.5),
+  loss = 'mean_squared_error'
+)
+```
+
+
+```{r}
+history <- red_superficie_cubierta %>% fit(
+  superficie_cub_entrenamiento,
+  as.matrix(precio_train),
+  epochs = 400,
+  # Suppress logging.
+  #verbose = 0,
+)
+```
+
+```{r}
+red_superficie_cubierta %>%
+  evaluate(
+    as.matrix(variables_test$surface_covered),
+    as.matrix(precio_test),
+    #verbose = 0
+  )
+```
+```{r}
+sqrt(17848500224)
+```
+
+```{r}
+build_and_compile_model <- function(norm) {
+  model <- keras_model_sequential() %>%
+    norm() %>%
+    layer_dense(32, activation = 'relu') %>%
+    layer_dense(1)
+
+  model %>% compile(
+    loss = 'mean_squared_error',
+    optimizer = optimizer_adam(0.1)
+  )
+
+  model
+}
+```
+
+```{r}
+red_profunda_superficie <- build_and_compile_model(normalizador_superficie)
+red_profunda_superficie
+```
+
+
+```{r}
+historia <- red_profunda_superficie %>% fit(
+  as.matrix(superficie_cub_entrenamiento),
+  as.matrix(precio_train),
+  validation_split = 0,
+  #verbose = 0,
+  epochs = 400
+)
+```
 
 
 
@@ -127,6 +233,11 @@ red_modelo_lineal <- keras_model_sequential() %>%
 
 red_modelo_lineal
 ```
+
+```{r}
+red_profunda_superficie
+```
+
 
 Una lista de las funciones de pérdida se encuentra en: [Funciones de pérdida de Tensorflow](https://tensorflow.rstudio.com/reference/keras/loss-functions.html#loss-functions-1)
 
@@ -154,17 +265,16 @@ historia <- red_modelo_lineal %>% fit(
 
 
 ```{r}
-test_results <- list()
-test_results[['linear_model']] <- red_modelo_lineal %>%
+red_profunda_superficie %>%
   evaluate(
-    as.matrix(variables_test),
+    as.matrix(variables_test$surface_covered),
     as.matrix(precio_test),
     #verbose = 0
   )
 ```
 
 ```{r}
-sqrt(test_results$linear_model)
+sqrt(13888815104)
 ```
 
 
