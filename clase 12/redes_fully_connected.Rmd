@@ -67,8 +67,16 @@ test_modelo_lineal <- testing(split_modelo_lineal)
 ```
 
 ```{r}
-ggplot(train_modelo_lineal, aes(surface_covered, price)) +
-  geom_point()
+ggplot(train_modelo_lineal, aes(x=surface_covered, y=price)) +
+  geom_point(alpha=0.25) +
+  theme_bw() +
+  labs(title="Relación Superficie Cubierta y Precio", x="Superficie Cubierta", y="Precio")
+
+ggplot(train_modelo_lineal, aes(x=surface_covered, y=price, color=property_type)) +
+  geom_point(alpha=0.5) +
+  theme_bw() +
+  facet_wrap(~property_type) +
+  labs(title="Relación Superficie Cubierta y Precio", x="Superficie Cubierta", y="Precio")
 ```
 
 
@@ -99,7 +107,7 @@ map_dfr(.x = lista_predicciones_testing, .f = metrics, truth = price, estimate =
 ```
 
 
-## Redes
+# Redes
 
 ```{r}
 library(recipes)
@@ -127,7 +135,7 @@ precio_train <- train_redes %>% select(price)
 precio_test <- test_redes %>% select(price)
 ```
 
-### Normalización
+## Normalización
 
 ```{r, warning=FALSE}
 normalizer <- layer_normalization(axis = -1L)
@@ -153,13 +161,25 @@ red_superficie_cubierta <- keras_model_sequential() %>%
 summary(red_superficie_cubierta)
 ```
 
-Para compilar la red es necesario definir:
+## Optimización y Función de Pérdida
+
+Para compilar la red vamos a utilizar la función `compile`. Como mínimo es necesario definir:
 
 * `optimizer`: el método de optimización
 
 * `loss`: la función de costo/pérdida
 
 
+El **método de optimización** es la manera en la cual se realiza el update (actualización) de los parámetros de la red.
+Un listado de los métodos de optimización se encuentra en: [Métodos de Optimización de Tensorflow](https://tensorflow.rstudio.com/reference/keras/index.html#optimizers). Se encuentran implementados desde los más simples como Descenso por el Gradiente Estocástico o Stochastic Gradient Descent hasta los más novedosos y comúnmente utilizados como ADAM (Adaptative Moment Estimation).
+
+Cada uno de estos métodos tienen argumentos para configurar pero nos vamos a preocupar sólo por el *learning_rate*
+
+La **función de costo/pérdida** es la función de costo
+
+Una lista de las funciones de pérdida se encuentra en: [Funciones de pérdida de Tensorflow](https://tensorflow.rstudio.com/reference/keras/loss-functions.html#loss-functions-1). Para problemas de regresión podemos utilizar funciones como: MSE, MAE o MAPE.
+
+En nuestro caso vamos a estar utilizando el optimizador ADAM (por convención) y la función de pérdida de MSE/ECM para que sea similar a los modelos lineales
 
 
 ```{r}
@@ -174,11 +194,17 @@ red_superficie_cubierta %>% compile(
 history <- red_superficie_cubierta %>% fit(
   superficie_cub_entrenamiento,
   as.matrix(precio_train),
-  epochs = 400,
+  epochs = 100,
   # Suppress logging.
-  #verbose = 0,
+  verbose = 0,
+  validation_split = 0.2
 )
 ```
+
+```{r}
+plot(history)
+```
+
 
 ```{r}
 red_superficie_cubierta %>%
@@ -188,20 +214,55 @@ red_superficie_cubierta %>%
     #verbose = 0
   )
 ```
+
+### Funciones de activación
+
+Para este modelo utilizamos dos funciones de activación: 
+
+- Rectified Linear Unit: $$f(x)=max(0,x)$$
+- Softmax : $$ f(x)=\frac{e^{x_i}}{\sum_{j=1}^n e^{x_j}}$$
+
+Definidas en código y gráficamente:
+
+
 ```{r}
-sqrt(17848500224)
+relu <- function(x) ifelse(x >= 0, x, 0)
+softmax <- function(x) exp(x) / sum(exp(x))
+
+relu_df = data.frame(x= seq(from=-2, to=2, by=0.25)) %>% 
+  mutate(relu = relu(x)) 
+
+softmax_df = data.frame(x= runif(min = -2, max=2, n=10)) %>% 
+  mutate(softmax = softmax(x))
+
+relu_plot = ggplot(relu_df, aes(x=x, y=relu))+
+  geom_line(size=1,  colour='steelblue') +
+  ggtitle("ReLU")+
+  theme_bw()
+
+softmax_plot = ggplot(softmax_df, aes(x=x, y=softmax, colour='firebrick'))+
+  geom_line(size=1) +
+  ggtitle("Softmax")+
+  theme_bw()
+
+cowplot::plot_grid(relu_plot, softmax_plot)
 ```
+
+
+__ReLu__ es la función de activación que más se utiliza en la actualidad en las hidden layers. 
+
 
 ```{r}
 build_and_compile_model <- function(norm) {
   model <- keras_model_sequential() %>%
     norm() %>%
+    layer_dense(64, activation = 'relu') %>% 
     layer_dense(32, activation = 'relu') %>%
     layer_dense(1)
 
   model %>% compile(
     loss = 'mean_squared_error',
-    optimizer = optimizer_adam(0.1)
+    optimizer = optimizer_adam(0.05)
   )
 
   model
@@ -209,77 +270,31 @@ build_and_compile_model <- function(norm) {
 ```
 
 ```{r}
-red_profunda_superficie <- build_and_compile_model(normalizador_superficie)
-red_profunda_superficie
+red_profunda <- build_and_compile_model(normalizer)
+red_profunda
 ```
 
 
 ```{r}
-historia <- red_profunda_superficie %>% fit(
-  as.matrix(superficie_cub_entrenamiento),
-  as.matrix(precio_train),
-  validation_split = 0,
-  #verbose = 0,
-  epochs = 400
-)
-```
-
-
-
-```{r}
-red_modelo_lineal <- keras_model_sequential() %>%
-  normalizer() %>%
-  layer_dense(units = 1)
-
-red_modelo_lineal
-```
-
-```{r}
-red_profunda_superficie
-```
-
-
-Una lista de las funciones de pérdida se encuentra en: [Funciones de pérdida de Tensorflow](https://tensorflow.rstudio.com/reference/keras/loss-functions.html#loss-functions-1)
-
-```{r}
-red_modelo_lineal %>% compile(
-  optimizer = optimizer_adam(learning_rate = 0.1),
-  loss = 'mean_squared_error'
-)
-
-red_modelo_lineal
-```
-
-
-```{r}
-historia <- red_modelo_lineal %>% fit(
+historia <- red_profunda %>% fit(
   as.matrix(variables_train),
   as.matrix(precio_train),
-  epochs = 500,
-  # Suppr#ess logging.
- # verbose = 0,
-  # Calculate validation results on 20% of the training data.
-  validation_split = 0.2
+  validation_split = 0.2,
+  verbose = 0,
+  epochs = 100,
+  seed = 1992
 )
 ```
 
-
 ```{r}
-red_profunda_superficie %>%
-  evaluate(
-    as.matrix(variables_test$surface_covered),
-    as.matrix(precio_test),
-    #verbose = 0
-  )
-```
-
-```{r}
-sqrt(13888815104)
+plot(historia) + theme_bw()
 ```
 
 
+
+
 ```{r}
-y_pred <- predict(red_modelo_lineal, as.matrix(variables_test))
+y_pred <- predict(red_profunda, as.matrix(variables_test))
 ```
 
 ```{r}
@@ -288,7 +303,7 @@ rmse_vec(truth = precio_test$price , estimate = c(y_pred))
 
 ```{r}
 ggplot(data.frame(pred = as.numeric(y_pred), precio = precio_test$price)) +
-  geom_point(aes(x = pred, y = precio)) +
+  geom_point(aes(x = pred, y = precio), alpha=0.9) +
   geom_abline(intercept = 0, slope = 1, color = "blue")
 ```
 
