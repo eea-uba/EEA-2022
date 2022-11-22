@@ -40,7 +40,7 @@ tf$constant("Aguante Tensorflow!")
 ```
 
 
-##
+## Dataset
 
 ```{r}
 # levantamos dataset preprocesado
@@ -52,7 +52,7 @@ datos_properati = datos_properati %>%
 ```
 
 ```{r}
-datos_properati %>% glimpse()
+datos_properati %>% head()
 ```
 
 ## Modelo lineal
@@ -81,15 +81,15 @@ ggplot(train_modelo_lineal, aes(x=surface_covered, y=price, color=property_type)
 
 
 ```{r}
-# Entrenamos un modelo simple
-modelo_lineal_simple <- lm(formula = price ~ surface_covered, data = train_modelo_lineal)
+# Entrenamos un modelo con 2 variables
+modelo_lineal_basico <- lm(formula = price ~ surface_covered + property_type, data = train_modelo_lineal)
 
 # Entrenamos un modelo multiple
-modelo_lineal_multiple <- lm(formula = price ~., data = train_modelo_lineal)
+modelo_lineal_todas <- lm(formula = price ~., data = train_modelo_lineal)
 ```
 
 ```{r}
-modelos_lineales = list(modelo_lineal_simple = modelo_lineal_simple, modelo_lineal_multiple = modelo_lineal_multiple)
+modelos_lineales = list(modelo_lineal_basico = modelo_lineal_basico, modelo_lineal_todas = modelo_lineal_todas)
 
 lista_predicciones_training = map(.x = modelos_lineales, .f = augment) 
 
@@ -137,6 +137,8 @@ precio_test <- test_redes %>% select(price)
 
 ## Normalización
 
+La normalización ayuda a que el proceso de optimización sea más rápido. Aunque rara vez es estrictamente necesario es una práctica muy usual en el trabajo con redes neuronales.
+
 ```{r, warning=FALSE}
 normalizer <- layer_normalization(axis = -1L)
 
@@ -147,18 +149,19 @@ normalizer$mean
 ## Red sencilla
 
 ```{r}
-superficie_cub_entrenamiento <- matrix(variables_train$surface_covered)
-normalizador_superficie <- layer_normalization(input_shape = shape(1), axis = NULL)
-normalizador_superficie %>% adapt(superficie_cub_entrenamiento)
+variables_red_sencila <-  variables_train %>% select(surface_covered, property_type_Casa,
+                                                     property_type_Departamento, property_type_PH) %>% as.matrix()
+normalizador_sencillo <- layer_normalization(input_shape = shape(4), axis = NULL)
+normalizador_sencillo %>% adapt(variables_red_sencila)
 ```
 
 
 ```{r}
-red_superficie_cubierta <- keras_model_sequential() %>%
-  normalizador_superficie() %>%
+red_sencilla <- keras_model_sequential() %>%
+  normalizador_sencillo() %>%
   layer_dense(units = 1)
 
-summary(red_superficie_cubierta)
+summary(red_sencilla)
 ```
 
 ## Optimización y Función de Pérdida
@@ -183,26 +186,27 @@ En nuestro caso vamos a estar utilizando el optimizador ADAM (por convención) y
 
 
 ```{r}
-red_superficie_cubierta %>% compile(
-  optimizer = optimizer_adam(learning_rate = 0.5),
+red_sencilla %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.1),
   loss = 'mean_squared_error'
 )
 ```
 
 
 ```{r}
-history <- red_superficie_cubierta %>% fit(
-  superficie_cub_entrenamiento,
+historia_red_sencilla <- red_sencilla %>% fit(
+  variables_red_sencila,
   as.matrix(precio_train),
   epochs = 100,
   # Suppress logging.
   verbose = 0,
-  validation_split = 0.2
+  validation_split = 0.2,
+  seed=1992
 )
 ```
 
 ```{r}
-plot(history)
+plot(historia_red_sencilla)
 ```
 
 
@@ -214,38 +218,100 @@ red_superficie_cubierta %>%
     #verbose = 0
   )
 ```
+## Red sencilla profunda
+
+```{r}
+red_sencilla_profunda <- keras_model_sequential() %>%
+    normalizador_sencillo() %>%
+    layer_dense(64, activation = 'linear') %>% 
+    layer_dense(32, activation = 'linear') %>%
+    layer_dense(1)
+
+red_sencilla_profunda
+```
+
+```{r}
+red_sencilla_profunda %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.1),
+  loss = 'mean_squared_error'
+)
+```
+
+```{r}
+historia_red_sencilla_profunda <- red_sencilla_profunda %>% fit(
+  variables_red_sencila,
+  as.matrix(precio_train),
+  epochs = 100,
+  # Suppress logging.
+  verbose = 0,
+  validation_split = 0.2,
+  seed=1992
+)
+```
+
+```{r}
+plot(historia_red_sencilla_profunda)
+```
+
+
+## Red sencilla profunda con activación no lineal
 
 ### Funciones de activación
 
 Para este modelo utilizamos dos funciones de activación: 
 
 - Rectified Linear Unit: $$f(x)=max(0,x)$$
-- Softmax : $$ f(x)=\frac{e^{x_i}}{\sum_{j=1}^n e^{x_j}}$$
 
 Definidas en código y gráficamente:
 
 
 ```{r}
 relu <- function(x) ifelse(x >= 0, x, 0)
-softmax <- function(x) exp(x) / sum(exp(x))
 
 relu_df = data.frame(x= seq(from=-2, to=2, by=0.25)) %>% 
   mutate(relu = relu(x)) 
-
-softmax_df = data.frame(x= runif(min = -2, max=2, n=10)) %>% 
-  mutate(softmax = softmax(x))
 
 relu_plot = ggplot(relu_df, aes(x=x, y=relu))+
   geom_line(size=1,  colour='steelblue') +
   ggtitle("ReLU")+
   theme_bw()
 
-softmax_plot = ggplot(softmax_df, aes(x=x, y=softmax, colour='firebrick'))+
-  geom_line(size=1) +
-  ggtitle("Softmax")+
-  theme_bw()
+relu_plot
+```
 
-cowplot::plot_grid(relu_plot, softmax_plot)
+https://tensorflow.rstudio.com/reference/keras/activation_relu
+
+```{r}
+red_sencilla_profunda_no_lineal <- keras_model_sequential() %>%
+    normalizador_sencillo() %>%
+    layer_dense(64, activation = 'relu') %>% 
+    layer_dense(32, activation = 'relu') %>%
+    layer_dense(1)
+
+red_sencilla_profunda_no_lineal
+```
+
+```{r}
+red_sencilla_profunda_no_lineal %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.1),
+  loss = 'mean_squared_error'
+)
+```
+
+```{r}
+historia_red_sencilla_profunda_no_lineal <- red_sencilla_profunda_no_lineal %>% fit(
+  variables_red_sencila,
+  as.matrix(precio_train),
+  epochs = 100,
+  # Suppress logging.
+  verbose = 0,
+  validation_split = 0.2,
+  seed=1992
+)
+```
+
+```{r}
+plot(historia_red_sencilla_profunda_no_lineal)
 ```
 
 
