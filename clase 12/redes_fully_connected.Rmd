@@ -1,23 +1,18 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Redes Neuronales"
+author: "Juan Barriola, Azul Villanueva y Franco Mastelli"
+date: "26 de noviembre de 2022"
 ---
 
-# Fully connected Neural Network
+# Redes Neuronales
 
+La idea central de esta clase es presentar a las redes neuronales como modelos muy flexibles y potentes que se pueden considerar como **aproximadores universales**. Se desarrollarán de manera superficial conceptos vinculados a la construcción de una red neuronal densa, funciones de activación y algunas conceptos clave del entrenamiento/fitting de una red.
 
 Esta clase se encuentra basada en el [tutorial de regresión de Tensorflow para R](https://tensorflow.rstudio.com/tutorials/keras/regression)
 
-Las redes neuronales densas (**Fully Connected Neural Networks**) son un tipo de red neuronal artificial donde todas las neuronas de una capa (**layer**) se encuentran conectadas con todas las neuronas de la capa siguiente.
-
-Este tipo de redes neuronales se caracterizan por ser "agnósticas de la estructura o del input" (**structure agnostic**) ya que no es necesario realizar supuestos o tratamientos especiales a los datos de input de la red.
-
-Veamos la arquitectura de una red densa:
-
-
 ## Keras
 
-Vamos a utilizar la librería [__KERAS__](https://keras.rstudio.com/)
+Para trabajar con redes neuronales vamos a utilizar la librería [__KERAS__](https://keras.rstudio.com/)
 
 ### Instalación
 
@@ -31,25 +26,32 @@ La función `install_keras()` realiza una instalación por default de basada en 
 Para una forma de instalación más completa y flexible se pueden seguir las instrucciones del siguiente link: [Instalación Tensorflow R](https://tensorflow.rstudio.com/install/index.html) 
 
 ```{r, message=FALSE, warning=FALSE}
+# Importamos las librerías
 library(tidyverse)
 library(tidymodels)
 library(keras)
 library(tensorflow)
 # Chequeamos que la instalación de keras y tensorflow sea correcta
 tf$constant("Aguante Tensorflow!")
+# Fijamos semilla
+set.seed(22)
 ```
-
 
 ## Dataset
 
+Vamos a trabajar sobre el dataset de Properati, que ya utilizamos en clases anteriores 
+
 ```{r}
-# levantamos dataset preprocesado
+# Levantamos dataset preprocesado
 datos_properati <- read.csv("../clase 6/properati_preprocesado_2022.csv")
-# creamos nueva variable de superficie descubierta
+# Creamos nueva variable de superficie descubierta
 datos_properati = datos_properati %>%
   mutate(surface_uncovered = surface_total - surface_covered) %>% 
+  # Eliminamos algunas variables
   select(-c(id, surface_total, precio_en_miles))
 ```
+
+Observamos los primeros registros de la tabla:
 
 ```{r}
 datos_properati %>% head()
@@ -57,62 +59,101 @@ datos_properati %>% head()
 
 ## Modelo lineal
 
-```{r}
-# fijamos semilla
-set.seed(22)
-# Partición Train y Test, indicando proporción
-split_modelo_lineal <- initial_split(datos_properati, prop = 0.75)
-train_modelo_lineal <- training(split_modelo_lineal)
-test_modelo_lineal <- testing(split_modelo_lineal)
-```
+Vamos a realizar dos modelos lineales para establecer un baseline de performance para comparar los modelos de redes neuronales.
+Comenzamos observando la relación entre precio y superficie cubierta con apertura por tipo de propiedad:
 
 ```{r}
-ggplot(train_modelo_lineal, aes(x=surface_covered, y=price, color=property_type)) +
+ggplot(datos_properati, aes(x=surface_covered, y=price, color=property_type)) +
   geom_point(alpha=0.5) +
   theme_bw() +
   facet_wrap(~property_type) +
   labs(title="Relación Superficie Cubierta y Precio", x="Superficie Cubierta", y="Precio")
 ```
 
+Ahora realizamos un split entre datos de entrenamiento (75%) y evaluación (25%)
 
 ```{r}
-# Entrenamos un modelo con 2 variables
+# Partición Train y Test, indicando proporción
+split_modelo_lineal <- initial_split(datos_properati, prop = 0.75)
+train_modelo_lineal <- training(split_modelo_lineal)
+test_modelo_lineal <- testing(split_modelo_lineal)
+```
+
+Vamos a realizar dos modelos lineales clásicos:
+
+**Modelo Básico**
+
+$E(precio) = \beta_0+\beta_1SuperficieCubierta + \beta_2TipoPropiedad$
+
+**Modelo Completo**
+
+$E(precio) = \beta_0+ \beta_1SuperficieCubierta + \beta_2TipoPropiedad + \beta_3SuperficieDescubierta + \beta_4L3 + \beta_5Habitaciones + \beta_6Baños$
+
+Entrenamos ambos modelos
+
+```{r}
+# Entrenamos el modelo básico
 modelo_lineal_basico <- lm(formula = price ~ surface_covered + property_type, data = train_modelo_lineal)
 
-# Entrenamos un modelo multiple
-modelo_lineal_todas <- lm(formula = price ~., data = train_modelo_lineal)
+# Entrenamos el modelo completo
+modelo_lineal_completo <- lm(formula = price ~., data = train_modelo_lineal)
 ```
 
-```{r}
-modelos_lineales = list(modelo_lineal_basico = modelo_lineal_basico, modelo_lineal_todas = modelo_lineal_todas)
+Predecimos los valores sobre el dataset de train y obtenemos los valores de RMSE y MAE
 
+```{r}
+# Listado de modelos
+modelos_lineales = list(modelo_lineal_basico = modelo_lineal_basico, modelo_lineal_completo = modelo_lineal_completo)
+
+# Realizamos predicciones en train
 lista_predicciones_training = map(.x = modelos_lineales, .f = augment) 
 
+# Obtenemos las métricas de performance en train
 map_dfr(.x = lista_predicciones_training, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
+        filter(.metric!="rsq") %>% 
         arrange(.metric, modelo) %>% 
         mutate(.estimate= round(.estimate, digits = 2))
 ```
+
+Predecimos los valores sobre el dataset de test y obtenemos los valores de RMSE y MAE
 
 ```{r}
+# Realizamos predicciones en test
 lista_predicciones_testing = map(.x = modelos_lineales, .f = augment, newdata = test_modelo_lineal) 
 
+# Obtenemos las métricas de performance en train
 map_dfr(.x = lista_predicciones_testing, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
+        filter(.metric!="rsq") %>% 
         arrange(.metric, modelo) %>% 
         mutate(.estimate= round(.estimate, digits = 2))
 ```
 
+## Redes Neuronales Densas
 
-# Redes
+Las redes neuronales densas (**Fully Connected Neural Networks**) son un tipo de red neuronal artificial donde todas las neuronas de una capa (**layer**) se encuentran conectadas con todas las neuronas de la capa siguiente.
+
+Este tipo de redes neuronales no realizan supuestos sobre la estructura de los datos de input de la red: cada observación o ejemplo es representada por un vector numérico. 
+
+### Preprocesamiento de datos
+
+En nuestro caso va a ser necesario realizar una transformación de las variables categóricas *property_type* y *l3*. Para el preprocesamiento vamos a utilizar la librería `recipes` para seguir lo planteado por el tutorial previamente citado. 
+
+En esta preparación vamos a transformar a una representación numérica a las variables *property_type* y *l3* mediante one-hot encoding
 
 ```{r}
 library(recipes)
 properati_redes <- recipe(price ~ ., datos_properati) %>%
+  # Realizamos one-hot encoding de la variable tipo de propiedad
   step_dummy(property_type, one_hot = TRUE) %>%
+  # Realizamos one-hot encoding de la variable l3
   step_dummy(l3, one_hot = TRUE) %>%
   prep() %>%
   bake(new_data = NULL)
+
+properati_redes %>% head()
 ```
 
+Ahora realizamos un split entre datos de entrenamiento (75%) y evaluación (25%) para los datos transformados para redes neuronales
 
 ```{r}
 # Partición Train y Test, indicando proporción
@@ -121,37 +162,61 @@ train_redes <- training(split_redes)
 test_redes <- testing(split_redes)
 ```
 
+Adicionalmente separamos nuestras variables predictoras de la variable a predecir (precio)
 
 ```{r}
+# Variables predictoras
 variables_train <- train_redes %>% select(-price)
 variables_test <- test_redes %>% select(-price)
 
+# Variable a predecir
 precio_train <- train_redes %>% select(price) %>% as.matrix()
 precio_test <- test_redes %>% select(price) %>% as.matrix()
 ```
 
-## Normalización
+### Normalización
 
 La normalización ayuda a que el proceso de optimización sea más rápido. Aunque rara vez es estrictamente necesario es una práctica muy usual en el trabajo con redes neuronales.
 
 ```{r, warning=FALSE}
-normalizer <- layer_normalization(axis = -1L)
+capa_normalización <- layer_normalization(axis = -1L)
 
-normalizer %>% adapt(as.matrix(variables_train))
+capa_normalización %>% adapt(as.matrix(variables_train))
 
-normalizer$mean
+capa_normalización$mean
 ```
 ## Red sencilla
 
+Vamos a comenzar realizando una red muy sencilla:
+
+  * Vamos a usar las variables de *surface_covered* y *property_type* 
+  * Vamos a usar sólo una capa con una única neurona
+
+Comenzamos preparando los datos para esta red sencilla y generando un normalizador específico
+
 ```{r}
+# Obtenemos las variables de interés
 variables_train_red_sencila <-  variables_train %>% select(surface_covered, property_type_Casa,
                                                      property_type_Departamento, property_type_PH) %>% as.matrix()
 
 variables_test_red_sencila <-  variables_test %>% select(surface_covered, property_type_Casa,
                                                      property_type_Departamento, property_type_PH) %>% as.matrix()
+# Generamos el normalizador de la red sencilla
 normalizador_sencillo <- layer_normalization(input_shape = shape(4), axis = NULL)
 normalizador_sencillo %>% adapt(variables_train_red_sencila)
 ```
+
+### Construcción de la red
+
+Para armar el modelo primero definimos el tipo de modelo. Para eso usamos `keras_model_sequential()` que nos permite simplemente apilar capas de la red. 
+
+- En la primera capa tenemos que aclarar el input_shape. En este caso es **unidimensional** (lo aplanamos previamente), pero podría ser un tensor de cualquier dimensión (!!)
+
+- Las capas se agregan con pipes `%>%`
+
+- La última capa tiene la misma cantidad de unidades que categorías nuestro output. La salida del modelo es un vector que asigna una probabilidad a cada una da las categorías
+
+- En cada capa tenemos que definir una función de activación
 
 
 ```{r}
@@ -162,14 +227,28 @@ red_sencilla <- keras_model_sequential() %>%
 summary(red_sencilla)
 ```
 
-## Optimización y Función de Pérdida
+Cada **neurona** de una capa tiene dos parámetros: los pesos (weights) y el sesgo (bias). Veamos la fórmula matemática de nuestra red para una sola observación 
+
+$Z_{1x1} = X_{1x4}\cdot W_{4x1} + b_{1x1}$
+
+Esto lo podemos reexpresar de la siguiente manera:
+
+$$
+z_i = \begin{pmatrix}x_{1i} & x_{2i} & x_{3i} & x_{4i}\end{pmatrix} \cdot \begin{pmatrix} w_1 \\ w_2 \\ w_3 \\ w_4 \end{pmatrix} + b
+\\
+z = b + w_1 \cdot x_{1i} + w_2 \cdot x_{2i} + w_3 \cdot x_{3i} + w_4 \cdot x_{4i}
+
+$$
+
+Vemos en este caso que la red tendrá que estimar 5 parámetros: 4 pesos y 1 sesgo
+
+### Optimización y Función de Pérdida
 
 Para compilar la red vamos a utilizar la función `compile`. Como mínimo es necesario definir:
 
 * `optimizer`: el método de optimización
 
 * `loss`: la función de costo/pérdida
-
 
 El **método de optimización** es la manera en la cual se realiza el update (actualización) de los parámetros de la red.
 Un listado de los métodos de optimización se encuentra en: [Métodos de Optimización de Tensorflow](https://tensorflow.rstudio.com/reference/keras/index.html#optimizers). Se encuentran implementados desde los más simples como Descenso por el Gradiente Estocástico o Stochastic Gradient Descent hasta los más novedosos y comúnmente utilizados como ADAM (Adaptative Moment Estimation).
@@ -182,14 +261,23 @@ Una lista de las funciones de pérdida se encuentra en: [Funciones de pérdida d
 
 En nuestro caso vamos a estar utilizando el optimizador ADAM (por convención) y la función de pérdida de MSE/ECM para que sea similar a los modelos lineales
 
-
 ```{r}
+#Compilamos la red
 red_sencilla %>% compile(
   optimizer = optimizer_adam(learning_rate = 0.1),
   loss = 'mean_squared_error'
 )
 ```
 
+### Entrenamiento
+
+Para ajustar el modelo usamos la función `fit()`, acá necesitamos pasar los siguientes parámetros:
+
+- El array con los datos de entrenamiento
+- El array con los outputs
+- `epochs`: Cuantas veces va a recorrer el dataset de entrenamiento
+- `batch_size`: de a cuantas imagenes va a mirar en cada iteración del backpropagation
+- `validation_split`: Hacemos un split en train y validation para evaluar las métricas.
 
 ```{r}
 historia_red_sencilla <- red_sencilla %>% fit(
@@ -204,6 +292,7 @@ historia_red_sencilla <- red_sencilla %>% fit(
 ```
 
 ```{r}
+# Generamos una función para graficar la historia de la red
 graficar_historia <- function(historia_red, titulo){
   plot(historia_red) +
     theme_bw() + 
@@ -232,9 +321,6 @@ red_sencilla %>%
     precio_test,
     verbose = 0 
   ) %>% sqrt()
-```
-```{r}
-pred
 ```
 
 
@@ -362,12 +448,13 @@ red_sencilla_profunda_no_lineal %>%
   ) %>% sqrt()
 ```
 
-## Red profunda con todas las variables
 
+## Red profunda con todas las variables
+fgsd
 
 ```{r}
 red_profunda <- keras_model_sequential() %>%
-    normalizer() %>%
+    capa_normalización() %>%
     layer_dense(64, activation = 'relu') %>% 
     layer_dense(32, activation = 'relu') %>%
     layer_dense(1)
@@ -398,6 +485,8 @@ historia_red_profunda <- red_profunda %>% fit(
 ```{r}
 graficar_historia(historia_red = historia_red_profunda, titulo = "Historia Red Profunda Todas Variables")
 ```
+
+
 
 ```{r}
 red_profunda %>%
