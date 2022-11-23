@@ -67,11 +67,6 @@ test_modelo_lineal <- testing(split_modelo_lineal)
 ```
 
 ```{r}
-ggplot(train_modelo_lineal, aes(x=surface_covered, y=price)) +
-  geom_point(alpha=0.25) +
-  theme_bw() +
-  labs(title="Relación Superficie Cubierta y Precio", x="Superficie Cubierta", y="Precio")
-
 ggplot(train_modelo_lineal, aes(x=surface_covered, y=price, color=property_type)) +
   geom_point(alpha=0.5) +
   theme_bw() +
@@ -94,7 +89,7 @@ modelos_lineales = list(modelo_lineal_basico = modelo_lineal_basico, modelo_line
 lista_predicciones_training = map(.x = modelos_lineales, .f = augment) 
 
 map_dfr(.x = lista_predicciones_training, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
-        arrange(.estimate) %>% 
+        arrange(.metric, modelo) %>% 
         mutate(.estimate= round(.estimate, digits = 2))
 ```
 
@@ -102,7 +97,7 @@ map_dfr(.x = lista_predicciones_training, .f = metrics, truth = price, estimate 
 lista_predicciones_testing = map(.x = modelos_lineales, .f = augment, newdata = test_modelo_lineal) 
 
 map_dfr(.x = lista_predicciones_testing, .f = metrics, truth = price, estimate = .fitted, .id="modelo") %>%
-        arrange(.estimate) %>% 
+        arrange(.metric, modelo) %>% 
         mutate(.estimate= round(.estimate, digits = 2))
 ```
 
@@ -131,8 +126,8 @@ test_redes <- testing(split_redes)
 variables_train <- train_redes %>% select(-price)
 variables_test <- test_redes %>% select(-price)
 
-precio_train <- train_redes %>% select(price)
-precio_test <- test_redes %>% select(price)
+precio_train <- train_redes %>% select(price) %>% as.matrix()
+precio_test <- test_redes %>% select(price) %>% as.matrix()
 ```
 
 ## Normalización
@@ -149,10 +144,13 @@ normalizer$mean
 ## Red sencilla
 
 ```{r}
-variables_red_sencila <-  variables_train %>% select(surface_covered, property_type_Casa,
+variables_train_red_sencila <-  variables_train %>% select(surface_covered, property_type_Casa,
+                                                     property_type_Departamento, property_type_PH) %>% as.matrix()
+
+variables_test_red_sencila <-  variables_test %>% select(surface_covered, property_type_Casa,
                                                      property_type_Departamento, property_type_PH) %>% as.matrix()
 normalizador_sencillo <- layer_normalization(input_shape = shape(4), axis = NULL)
-normalizador_sencillo %>% adapt(variables_red_sencila)
+normalizador_sencillo %>% adapt(variables_train_red_sencila)
 ```
 
 
@@ -195,7 +193,7 @@ red_sencilla %>% compile(
 
 ```{r}
 historia_red_sencilla <- red_sencilla %>% fit(
-  variables_red_sencila,
+  variables_train_red_sencila,
   as.matrix(precio_train),
   epochs = 100,
   # Suppress logging.
@@ -206,19 +204,45 @@ historia_red_sencilla <- red_sencilla %>% fit(
 ```
 
 ```{r}
-plot(historia_red_sencilla)
+graficar_historia <- function(historia_red, titulo){
+  plot(historia_red) +
+    theme_bw() + 
+    labs(title = titulo, x = "Época", y="MSE") +
+    scale_y_continuous(labels = scales::comma)
+}
 ```
+
 
 
 ```{r}
-red_superficie_cubierta %>%
-  evaluate(
-    as.matrix(variables_test$surface_covered),
-    as.matrix(precio_test),
-    #verbose = 0
-  )
+graficar_historia(historia_red = historia_red_sencilla, titulo = "Historia Red Sencilla")
 ```
+```{r}
+augment_redes <- function(modelo_red, matriz_variables, variable_target) {
+  y_pred <- predict(modelo_red, matriz_variables) %>% as.vector()
+  df_predicciones <- tibble(y = as.vector(variable_target), y_pred = y_pred)
+  return(df_predicciones)
+}
+```
+
+```{r}
+red_sencilla %>%
+  evaluate(
+    variables_test_red_sencila,
+    precio_test,
+    verbose = 0 
+  ) %>% sqrt()
+```
+```{r}
+pred
+```
+
+
 ## Red sencilla profunda
+
+Comentario breve sobre redes profundas
+
+Explicación sobre layer dense
 
 ```{r}
 red_sencilla_profunda <- keras_model_sequential() %>%
@@ -230,6 +254,9 @@ red_sencilla_profunda <- keras_model_sequential() %>%
 red_sencilla_profunda
 ```
 
+Insertar algún diagrama
+Hacer el cálculo de los parámetros
+
 ```{r}
 red_sencilla_profunda %>% compile(
   optimizer = optimizer_adam(learning_rate = 0.1),
@@ -239,8 +266,8 @@ red_sencilla_profunda %>% compile(
 
 ```{r}
 historia_red_sencilla_profunda <- red_sencilla_profunda %>% fit(
-  variables_red_sencila,
-  as.matrix(precio_train),
+  variables_train_red_sencila,
+  precio_train,
   epochs = 100,
   # Suppress logging.
   verbose = 0,
@@ -250,7 +277,16 @@ historia_red_sencilla_profunda <- red_sencilla_profunda %>% fit(
 ```
 
 ```{r}
-plot(historia_red_sencilla_profunda)
+graficar_historia(historia_red = historia_red_sencilla_profunda, titulo = "Historia Red Sencilla Profunda")
+```
+
+```{r}
+red_sencilla_profunda %>%
+  evaluate(
+    variables_test_red_sencila,
+    precio_test,
+    verbose = 0 
+  ) %>% sqrt()
 ```
 
 
@@ -258,11 +294,13 @@ plot(historia_red_sencilla_profunda)
 
 ### Funciones de activación
 
-Para este modelo utilizamos dos funciones de activación: 
+Las funciones de activación 
+
+Para este modelo vamos a utilizar utilizamos la función de activación ReLu: 
 
 - Rectified Linear Unit: $$f(x)=max(0,x)$$
 
-Definidas en código y gráficamente:
+Definida en código y gráficamente:
 
 
 ```{r}
@@ -300,8 +338,8 @@ red_sencilla_profunda_no_lineal %>% compile(
 
 ```{r}
 historia_red_sencilla_profunda_no_lineal <- red_sencilla_profunda_no_lineal %>% fit(
-  variables_red_sencila,
-  as.matrix(precio_train),
+  variables_train_red_sencila,
+  precio_train,
   epochs = 100,
   # Suppress logging.
   verbose = 0,
@@ -310,66 +348,89 @@ historia_red_sencilla_profunda_no_lineal <- red_sencilla_profunda_no_lineal %>% 
 )
 ```
 
+
 ```{r}
-plot(historia_red_sencilla_profunda_no_lineal)
+graficar_historia(historia_red = historia_red_sencilla_profunda_no_lineal, titulo = "Historia Red Sencilla Profunda No Lineal")
 ```
 
+```{r}
+red_sencilla_profunda_no_lineal %>%
+  evaluate(
+    variables_test_red_sencila,
+    precio_test,
+    verbose = 0 
+  ) %>% sqrt()
+```
 
-__ReLu__ es la función de activación que más se utiliza en la actualidad en las hidden layers. 
+## Red profunda con todas las variables
 
 
 ```{r}
-build_and_compile_model <- function(norm) {
-  model <- keras_model_sequential() %>%
-    norm() %>%
+red_profunda <- keras_model_sequential() %>%
+    normalizer() %>%
     layer_dense(64, activation = 'relu') %>% 
     layer_dense(32, activation = 'relu') %>%
     layer_dense(1)
 
-  model %>% compile(
-    loss = 'mean_squared_error',
-    optimizer = optimizer_adam(0.05)
-  )
-
-  model
-}
-```
-
-```{r}
-red_profunda <- build_and_compile_model(normalizer)
 red_profunda
 ```
 
-
 ```{r}
-historia <- red_profunda %>% fit(
-  as.matrix(variables_train),
-  as.matrix(precio_train),
-  validation_split = 0.2,
-  verbose = 0,
-  epochs = 100,
-  seed = 1992
+red_profunda %>% compile(
+  optimizer = optimizer_adam(learning_rate = 0.1),
+  loss = 'mean_squared_error'
 )
 ```
 
 ```{r}
-plot(historia) + theme_bw()
+historia_red_profunda <- red_profunda %>% fit(
+  as.matrix(variables_train),
+  precio_train,
+  epochs = 100,
+  # Suppress logging.
+  verbose = 0,
+  validation_split = 0.2,
+  seed=1992
+)
 ```
 
 
-
-
 ```{r}
-y_pred <- predict(red_profunda, as.matrix(variables_test))
+graficar_historia(historia_red = historia_red_profunda, titulo = "Historia Red Profunda Todas Variables")
 ```
 
 ```{r}
-rmse_vec(truth = precio_test$price , estimate = c(y_pred))
+red_profunda %>%
+  evaluate(
+    as.matrix(variables_test),
+    precio_test,
+    verbose = 0 
+  ) %>% sqrt()
+```
+```{r}
+pred_red_profunda_train <- augment_redes(red_profunda, as.matrix(variables_train), precio_train)
+
+pred_red_profunda_test <- augment_redes(red_profunda, as.matrix(variables_test), precio_test)
+```
+```{r}
+metrics(pred_red_profunda_train, truth = y, estimate = y_pred) %>% 
+  mutate(.estimate= round(.estimate, digits = 2))
 ```
 
 ```{r}
-ggplot(data.frame(pred = as.numeric(y_pred), precio = precio_test$price)) +
-  geom_point(aes(x = pred, y = precio), alpha=0.9) +
+metrics(pred_red_profunda_test, truth = y, estimate = y_pred) %>% 
+  mutate(.estimate= round(.estimate, digits = 2))
+```
+
+```{r}
+ggplot(pred_red_profunda_test, aes(x=y, y=y_pred)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "blue")
+```
+
+```{r}
+ggplot(lista_predicciones_testing$modelo_lineal_todas, aes(x=price, y=.fitted)) +
+  geom_point() +
   geom_abline(intercept = 0, slope = 1, color = "blue")
 ```
 
