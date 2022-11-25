@@ -120,7 +120,7 @@ Regresión Bayesiana
 
 #### Construcción datasets NBA
 
-- [Diccionario de términos NBA](clase 10/creacion_datasets_nba.html)
+- [Notebook creación de datasets NBA](clase 10/creacion_datasets_nba.html)
 
 ### Clase 10: 22-10
 
@@ -146,8 +146,11 @@ Smoothing, GAM y Prophet.
 
 - [Prophet: implementacion de GAM para series de tiempo](clase 11/prophet_shopping.nb.html)
 
+### Clase 13: 26-11
 
-### Clase 14: 19-11
+Redes Neuronales
 
-Redes Neuronales. 
+- [Introducción a Redes Neuronales](clase 12/redes_fully_connected.nb.html)
+
+- [Introducción a tidymodels](clase 11/tidymodels.nb.html)
 
